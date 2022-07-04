@@ -22,7 +22,7 @@
 -->
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-  <xacro:property name="prop_mesh_file" value="file://$(find raybot_description)/meshes/t200_thruster_blueesc_origin_tip.dae"/>
+  <xacro:property name="prop_mesh_file" value="file://$(find raybot_description)/meshes/raybot_simple_thruster_v2.dae"/>
 
   <!-- Thruster joint and link snippet -->
   <xacro:macro name="thruster_macro"
@@ -32,34 +32,34 @@
       thruster_id="${thruster_id}"
       mesh_filename="${prop_mesh_file}"
       dyn_time_constant="0.05"
-      rotor_constant="0.00031">
+      rotor_constant="0.0000033"> <!-- 0.00031 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx -->
       <xacro:insert_block name="origin"/>
     </xacro:thruster_module_first_order_basic_fcn_macro>
   </xacro:macro>
 
   <xacro:thruster_macro namespace="${namespace}" thruster_id="0">
-   <origin xyz="0.14 -0.18515 0.549" rpy="${0*d2r} ${0*d2r} ${0*d2r}"/>
+   <origin xyz="0 -0.34 0.21" rpy="${0*d2r} ${0*d2r} ${0*d2r}"/>
   </xacro:thruster_macro>
   <xacro:thruster_macro namespace="${namespace}" thruster_id="1">
-   <origin xyz="0.14 0.18515 0.549" rpy="${0*d2r} ${0*d2r} ${0*d2r}"/>
+   <origin xyz="0 0.34 0.21" rpy="${0*d2r} ${0*d2r} ${0*d2r}"/>
   </xacro:thruster_macro>
   <xacro:thruster_macro namespace="${namespace}" thruster_id="2">
-   <origin xyz="0.14 -0.18515 -0.549" rpy="${0*d2r} ${0*d2r} ${0*d2r}"/>
+   <origin xyz="0 0.34 -0.21" rpy="${0*d2r} ${0*d2r} ${0*d2r}"/>
   </xacro:thruster_macro>
   <xacro:thruster_macro namespace="${namespace}" thruster_id="3">
-   <origin xyz="0.14 0.18515 -0.549" rpy="${0*d2r} ${0*d2r} ${0*d2r}"/>
+   <origin xyz="0 -0.34 -0.21" rpy="${0*d2r} ${0*d2r} ${0*d2r}"/>
   </xacro:thruster_macro>
   <xacro:thruster_macro namespace="${namespace}" thruster_id="4">
-   <origin xyz="0 0 0.549" rpy="${0*d2r} ${0*d2r} ${90.0*d2r}"/>
+   <origin xyz="0 0 0.21" rpy="${0*d2r} ${0*d2r} ${90.0*d2r}"/>
   </xacro:thruster_macro>
   <xacro:thruster_macro namespace="${namespace}" thruster_id="5">
-   <origin xyz="0 0 -0.549" rpy="${0*d2r} ${0*d2r} ${90.0*d2r}"/>
+   <origin xyz="0 0 -0.21" rpy="${0*d2r} ${0*d2r} ${90.0*d2r}"/>
   </xacro:thruster_macro>
   <xacro:thruster_macro namespace="${namespace}" thruster_id="6">
-   <origin xyz="0 -0.18515 -0.35472" rpy="${0*d2r} ${-90*d2r} ${0*d2r}"/>
+   <origin xyz="0 0.34 0" rpy="${0*d2r} ${-90*d2r} ${0*d2r}"/>
   </xacro:thruster_macro>
   <xacro:thruster_macro namespace="${namespace}" thruster_id="7">
-   <origin xyz="0 0.18515 -0.35472" rpy="${0*d2r} ${-90*d2r} ${0*d2r}"/>
+   <origin xyz="0 -0.34 0" rpy="${0*d2r} ${-90*d2r} ${0*d2r}"/>
   </xacro:thruster_macro>
 </robot>
 

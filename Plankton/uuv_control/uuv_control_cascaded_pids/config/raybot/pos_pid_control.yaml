@@ -1,11 +1,11 @@
 /**:
   ros__parameters:
-    pos_p: 0.8
-    pos_i: 0.0005
-    pos_d: 0.0005
-    pos_sat: 1.0
+    pos_p: 5
+    pos_i: 0.2
+    pos_d: 0.5
+    pos_sat: 10
 
-    rot_p: 0.3
-    rot_i: 0.001
-    rot_d: 0.001
-    rot_sat: 2.0
+    rot_p: 5
+    rot_i: 0.2
+    rot_d: 0.5
+    rot_sat: 10

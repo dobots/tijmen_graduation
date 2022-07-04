@@ -12,5 +12,5 @@
       update_rate: 50.0
       conversion_fcn: proportional
       conversion_fcn_params:
-        gain: 0.00031
+        gain: 0.0000031
 

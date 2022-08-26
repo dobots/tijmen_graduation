@@ -41,7 +41,7 @@
 import sys
 import numpy as np
 import casadi
-sys.path.insert(0, '/home/tijmen/forcespro/forces_pro_client') # On Unix
+sys.path.insert(0, '/home/tijmen/forcespro/forces_pro_client') # On Unix: CHANGE THIS TO OWN LOCAL FOLDER OF FORCESPRO
 import forcespro
 import forcespro.nlp
 import matplotlib.pyplot as plt

@@ -48,6 +48,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches
 from matplotlib.gridspec import GridSpec
 import casadi
+from mpl_toolkits import mplot3d
 
 
 def continuous_dynamics(x, u):
@@ -220,7 +221,7 @@ def updatePlots(x,u,pred_x,pred_u,model,k):
     # print(f" u: {u}")
     # print(f" pred_x: {pred_x}")
     # print(f" pred_u: {pred_u}")
-    fig = plt.gcf()
+    fig = plt.figure('1')
     ax_list = fig.axes
     
     # Delete old data in plot
@@ -277,7 +278,15 @@ def updatePlots(x,u,pred_x,pred_u,model,k):
     #     np.rad2deg(u[1, 0:k+1]),'b-')                        # plot new steering rate
     # ax_list[5].step(range(k, k+model.N), \
     #     np.rad2deg(pred_u[1,:]),'g-')                        # plot new prediction of steering rate
+    fig = plt.figure('2')
+    ax_list = fig.axes
+    
+    # Delete old data in plot
+    ax_list[0].get_lines().pop(-1).remove() # remove old prediction of trajectory xy
+    ax_list[0].get_lines().pop(-1).remove() # remove old trajectory xy 
 
+    ax_list[0].plot3D(x[0,0:k+2],x[1,0:k+2],x[2,0:k+2], '-b')             # plot new trajectory
+    ax_list[0].plot3D(pred_x[0,1:], pred_x[1,1:], pred_x[2,1:], 'g-')        # plot new prediction of trajectory
 
     plt.pause(0.05)
 
@@ -289,7 +298,7 @@ def createPlot(x,u,start_pred,sim_length,model,path_points,xinit):
     # print(f" start_pred: {start_pred}")
     # print(f" path_points: {path_points}")
      # Create empty plot
-    fig = plt.figure()
+    fig = plt.figure('1')
     plt.clf()
     gs = GridSpec(6,3,figure=fig)
     
@@ -400,6 +409,27 @@ def createPlot(x,u,start_pred,sim_length,model,path_points,xinit):
     mng = plt.get_current_fig_manager()
     # plt.pause(20)
 
+    # TRYING NEW 3D PLOT........................................................................................................
+    plt.figure('2')
+
+    # syntax for 3-D projection
+    ax3d = plt.axes(projection ='3d')
+    
+    # defining all 3 axes
+    # z = np.linspace(0, 1, 100)
+    # x = z * np.sin(25 * z)
+    # y = z * np.cos(25 * z)
+    
+    # plotting
+    ax3d.plot3D(np.transpose(path_points[0,:]), np.transpose(path_points[1,:]), np.transpose(path_points[2,:]), 'rx')
+    ax3d.plot([xinit[0]], [xinit[1]], [xinit[2]], 'bx')
+    ax3d.plot([x[0,0]],[x[1,0]],[x[2,0]],'b-')
+    ax3d.plot(start_pred[3,:], start_pred[4,:], start_pred[5,:],'g-')
+    ax3d.set_title('3D trajectory plot')
+    # plt.show()
+    # plt.pause(20)
+    # ...........................................................................................................................
+
 
 def main():
     # generate code for estimator
@@ -466,7 +496,7 @@ def main():
         updatePlots(x,u,pred_x,pred_u,model,k)
        
         if k == sim_length-1:
-            fig=plt.gcf()
+            fig = plt.figure('1')
             ax_list = fig.axes
             ax_list[0].get_lines().pop(-1).remove()   # remove old prediction of trajectory
             ax_list[0].legend(['desired trajectory','init pos','robot trajectory'], \

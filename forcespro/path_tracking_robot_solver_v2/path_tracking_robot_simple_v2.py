@@ -63,7 +63,7 @@ def continuous_dynamics(x, u):
     return casadi.vertcat(  x[3],       # dxPos/dt = Vx
                             x[4],       # dyPos/dt = Vy
                             x[5],       # dalpha/dt = omega
-                            u[0] / m,   # dVx/dt = Fx/m
+                            u[0] / m,   # dVx/dt = Fx/m !!!! HIER NOG GOED NAAR KIJKEN!!!!!
                             u[1] / m,   # dVy/dt = Fy/m 
                             ((-u[0]*lx)+(u[1]*ly))/I)        # domega/dt = ((-Fx*lx)+(Fy*ly))/I                   
 

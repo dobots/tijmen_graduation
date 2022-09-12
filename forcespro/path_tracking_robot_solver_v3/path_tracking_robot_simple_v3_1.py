@@ -331,13 +331,13 @@ def updatePlots(x,u,pred_x,pred_u,model,k):
     # Update plot with current simulation data
     ax_list[0].plot(x[0,0:k+2],x[1,0:k+2], '-b')             # plot new trajectory
     ax_list[0].plot(pred_x[0,1:], pred_x[1,1:], 'g-')        # plot new prediction of trajectory
-    rect1 = Rectangle(((x[0,k+1]-(0.08/2)),(x[1,k+1]-(0.3/2))),0.08,0.3,
+    rect1 = Rectangle(((x[0,k+1]-(0.33/2)),(x[1,k+1]-(1.2/2))),0.33,1.2,
                 angle=np.rad2deg(x[2,k+1]),
                 edgecolor='black',
                 facecolor='none',
                 lw=1)
     ax_list[0].add_patch(rect1)
-    rect2 = Rectangle(((x[0,k]-(0.08/2)),(x[1,k]-(0.3/2))),0.08,0.3,
+    rect2 = Rectangle(((x[0,k]-(0.33/2)),(x[1,k]-(1.2/2))),0.33,1.2,
                 angle=np.rad2deg(x[2,k]),
                 edgecolor='grey',
                 facecolor='none',
@@ -422,13 +422,13 @@ def createPlot(x,u,start_pred,sim_length,model,path_points,xinit):
     plt.ylabel('y-coordinate')
     l2, = axy_pos.plot(x[0,0],x[1,0],'b-')
     l3, = axy_pos.plot(start_pred[3,:], start_pred[4,:],'g-')
-    rect1 = Rectangle(((0-(0.08/2)),(0-(0.3/2))),0.08,0.3,
+    rect1 = Rectangle(((0-(0.33/2)),(0-(1.2/2))),0.33,1.2,
                 angle=np.rad2deg(xinit[2]),
                 edgecolor='black',
                 facecolor='none',
                 lw=0.4)
     axy_pos.add_patch(rect1)
-    rect2 = Rectangle(((0-(0.08/2)),(0-(0.3/2))),0.08,0.3,
+    rect2 = Rectangle(((0-(0.33/2)),(0-(1.2/2))),0.33,1.2,
                 angle=np.rad2deg(xinit[2]),
                 edgecolor='grey',
                 facecolor='none',

@@ -49,6 +49,7 @@ import matplotlib.patches
 from matplotlib.gridspec import GridSpec
 import casadi
 from mpl_toolkits import mplot3d
+from matplotlib.patches import Rectangle
 
 
 def continuous_dynamics(x, u):
@@ -70,8 +71,8 @@ def continuous_dynamics(x, u):
     M = casadi.diag([m,m,Izz])
     AM = casadi.diag([53.56, 10.3, 1.367])
     Minv = casadi.inv((M+AM))
-    print(f"x:{x}")
-    print(f"u:{u}")
+    # print(f"x:{x}")
+    # print(f"u:{u}")
     v = x[3:6]
     # print(f"v:{v}")
     psi = float(x[2])
@@ -144,12 +145,16 @@ def calc_points_on_ellipse(num_points):
     # dT = 2 * np.pi / num_points
     dT = 1 / num_points
     # print(f"dT :{dT}")
-    t = np.arange(dT,(num_points+1)*dT*2,dT)
+    t = np.arange(dT,(num_points+1)*dT,dT*2)
+    # t2 = np.arange(dT,(num_points+1)*dT,dT*2)
     # print(f"t :{t}")
+    # print(f"t2 :{t2}")
     # path_points = np.array([0.5*np.cos(t),
                     # 2.0*np.sin(t), 0.5*np.sin(t)])
-    path_points = np.array([0.5*t,
-                    2.0*t, 0*t])
+    path_points = np.hstack([np.array([1*t,0*t, 0*t]), 
+                                np.array([0*t+1,2.0*t,0*t]), 
+                                np.array([1*t+1,0*t+2, 0*t]),
+                                np.array([0*t+2,-2.0*t+2,0*t])])
     # print(f"path_points:{path_points}")
     return path_points
 
@@ -274,10 +279,18 @@ def updatePlots(x,u,pred_x,pred_u,model,k):
     # print(f" pred_u: {pred_u}")
     fig = plt.figure('1')
     ax_list = fig.axes
+    # rect1 = ax_list[0].patches
     
     # Delete old data in plot
     ax_list[0].get_lines().pop(-1).remove() # remove old prediction of trajectory xy
     ax_list[0].get_lines().pop(-1).remove() # remove old trajectory xy 
+    # print(f" ax_list[0]:{ax_list[0]}")
+    # print(f" rect_1:{rect1}")
+    ax_list[0].patches[-2].remove()
+    # ax_list[0].patches[0].remove()
+    # ax_list[0].get_patches.remove()
+    # rect1.remove()
+    # ax_list[0].get_lines().pop(-1).remove()
 
     ax_list[1].get_lines().pop(-1).remove() # remove old prediction of trajectory xz 
     ax_list[1].get_lines().pop(-1).remove() # remove old trajectory xz
@@ -312,51 +325,63 @@ def updatePlots(x,u,pred_x,pred_u,model,k):
     ax_list[11].get_lines().pop(-1).remove() # remove old prediction of force z 
     ax_list[11].get_lines().pop(-1).remove() # remove old force z
 
-    ax_list[12].get_lines().pop(-1).remove() # remove old prediction of force z 
-    ax_list[12].get_lines().pop(-1).remove() # remove old force z
+    # ax_list[12].get_lines().pop(-1).remove() # remove old prediction of force z 
+    # ax_list[12].get_lines().pop(-1).remove() # remove old force z
 
     # Update plot with current simulation data
     ax_list[0].plot(x[0,0:k+2],x[1,0:k+2], '-b')             # plot new trajectory
     ax_list[0].plot(pred_x[0,1:], pred_x[1,1:], 'g-')        # plot new prediction of trajectory
+    rect1 = Rectangle(((x[0,k+1]-(0.08/2)),(x[1,k+1]-(0.3/2))),0.08,0.3,
+                angle=np.rad2deg(x[2,k+1]),
+                edgecolor='black',
+                facecolor='none',
+                lw=1)
+    ax_list[0].add_patch(rect1)
+    rect2 = Rectangle(((x[0,k]-(0.08/2)),(x[1,k]-(0.3/2))),0.08,0.3,
+                angle=np.rad2deg(x[2,k]),
+                edgecolor='grey',
+                facecolor='none',
+                lw=0.3)
+    ax_list[0].add_patch(rect2)
 
     # ax_list[1].plot(x[0,0:k+2],x[2,0:k+2], '-b')             # plot new trajectory xz
     # ax_list[1].plot(pred_x[0,1:], pred_x[2,1:], 'g-')        # plot new prediction of trajectory xz
-    ax_list[1].plot(x[2,0:k+2], '-b')                           # plot new trajectory psi
-    ax_list[1].plot(range(k+1,k+model.N), pred_x[2,1:], 'g-')        # plot new prediction of trajectory psi
+    # ax_list[1].plot(np.rad2deg(x[2,0:k+2]), '-b')                           # plot new trajectory psi
+    # ax_list[1].plot(range(k+1,k+model.N), np.rad2deg(pred_x[2,1:]), 'g-')        # plot new prediction of trajectory psi
 
-    ax_list[2].plot(x[3,0:k+2],'b-')                         # plot new velocity x
-    ax_list[2].plot(range(k+1,k+model.N), pred_x[3,1:],'g-') # plot new prediction of velocity x
+    ax_list[1].plot(x[3,0:k+2],'b-')                         # plot new velocity x
+    ax_list[1].plot(range(k+1,k+model.N), pred_x[3,1:],'g-') # plot new prediction of velocity x
 
-    ax_list[3].plot(x[4,0:k+2],'b-')                         # plot new velocity y
-    ax_list[3].plot(range(k+1,k+model.N), pred_x[4,1:],'g-') # plot new prediciton of velocity y
+    ax_list[2].plot(x[4,0:k+2],'b-')                         # plot new velocity y
+    ax_list[2].plot(range(k+1,k+model.N), pred_x[4,1:],'g-') # plot new prediciton of velocity y
 
-    ax_list[4].plot(x[5,0:k+2],'b-')                         # plot new velocity z
-    ax_list[4].plot(range(k+1,k+model.N), pred_x[5,1:],'g-') # plot new prediciton of velocity z
+    ax_list[3].plot(x[5,0:k+2],'b-')                         # plot new velocity z
+    ax_list[3].plot(range(k+1,k+model.N), pred_x[5,1:],'g-') # plot new prediciton of velocity z
 
     # ax_list[3].plot(np.rad2deg(x[4, 0:k+2]),'b-')            # plot new steering angle
     # ax_list[3].plot(range(k+1,k+model.N), \
     #     np.rad2deg(pred_x[4,1:]),'g-')                       # plot new prediction of steering angle
-    ax_list[5].step(range(0, k+1), u[0, 0:k+1],'b-')         # plot new acceleration force x
-    ax_list[5].step(range(k, k+model.N), pred_u[0,:],'g-')   # plot new prediction of acceleration force x
-    ax_list[6].step(range(0, k+1), u[1, 0:k+1],'b-')         # plot new acceleration force y 
-    ax_list[6].step(range(k, k+model.N), pred_u[1,:],'g-')   # plot new prediction of acceleration force y 
-    ax_list[7].step(range(0, k+1), u[2, 0:k+1],'b-')         # plot new acceleration force y 
-    ax_list[7].step(range(k, k+model.N), pred_u[2,:],'g-')   # plot new prediction of acceleration force y 
+    ax_list[4].step(range(0, k+1), u[0, 0:k+1],'b-')         # plot new acceleration force x
+    ax_list[4].step(range(k, k+model.N), pred_u[0,:],'g-')   # plot new prediction of acceleration force x
+    ax_list[5].step(range(0, k+1), u[1, 0:k+1],'b-')         # plot new acceleration force y 
+    ax_list[5].step(range(k, k+model.N), pred_u[1,:],'g-')   # plot new prediction of acceleration force y 
+    ax_list[6].step(range(0, k+1), u[2, 0:k+1],'b-')         # plot new acceleration force y 
+    ax_list[6].step(range(k, k+model.N), pred_u[2,:],'g-')   # plot new prediction of acceleration force y 
 
-    ax_list[8].step(range(0, k+1), u[3, 0:k+1],'b-')         # plot new acceleration force y 
-    ax_list[8].step(range(k, k+model.N), pred_u[3,:],'g-')   # plot new prediction of acceleration force y 
+    ax_list[7].step(range(0, k+1), u[3, 0:k+1],'b-')         # plot new acceleration force y 
+    ax_list[7].step(range(k, k+model.N), pred_u[3,:],'g-')   # plot new prediction of acceleration force y 
 
-    ax_list[9].step(range(0, k+1), u[4, 0:k+1],'b-')         # plot new acceleration force y 
-    ax_list[9].step(range(k, k+model.N), pred_u[4,:],'g-')   # plot new prediction of acceleration force y 
+    ax_list[8].step(range(0, k+1), u[4, 0:k+1],'b-')         # plot new acceleration force y 
+    ax_list[8].step(range(k, k+model.N), pred_u[4,:],'g-')   # plot new prediction of acceleration force y 
 
-    ax_list[10].step(range(0, k+1), u[5, 0:k+1],'b-')         # plot new acceleration force y 
-    ax_list[10].step(range(k, k+model.N), pred_u[5,:],'g-')   # plot new prediction of acceleration force y 
+    ax_list[9].step(range(0, k+1), u[5, 0:k+1],'b-')         # plot new acceleration force y 
+    ax_list[9].step(range(k, k+model.N), pred_u[5,:],'g-')   # plot new prediction of acceleration force y 
 
-    ax_list[11].step(range(0, k+1), u[6, 0:k+1],'b-')         # plot new acceleration force y 
-    ax_list[11].step(range(k, k+model.N), pred_u[6,:],'g-')   # plot new prediction of acceleration force y 
+    ax_list[10].step(range(0, k+1), u[6, 0:k+1],'b-')         # plot new acceleration force y 
+    ax_list[10].step(range(k, k+model.N), pred_u[6,:],'g-')   # plot new prediction of acceleration force y 
 
-    ax_list[12].step(range(0, k+1), u[7, 0:k+1],'b-')         # plot new acceleration force y 
-    ax_list[12].step(range(k, k+model.N), pred_u[7,:],'g-')   # plot new prediction of acceleration force y 
+    ax_list[11].step(range(0, k+1), u[7, 0:k+1],'b-')         # plot new acceleration force y 
+    ax_list[11].step(range(k, k+model.N), pred_u[7,:],'g-')   # plot new prediction of acceleration force y 
     # ax_list[5].step(range(0, k+1), \
     #     np.rad2deg(u[1, 0:k+1]),'b-')                        # plot new steering rate
     # ax_list[5].step(range(k, k+model.N), \
@@ -386,39 +411,51 @@ def createPlot(x,u,start_pred,sim_length,model,path_points,xinit):
     gs = GridSpec(6,4,figure=fig)
     
     # Plot trajectory xy
-    axy_pos = fig.add_subplot(gs[:,0])
+    axy_pos = fig.add_subplot(gs[:,0:2])
     l0, = axy_pos.plot(np.transpose(path_points[0,:]), np.transpose(path_points[1,:]), 'rx')
     l1, = axy_pos.plot(xinit[0], xinit[1], 'bx')
     plt.title('Position xy')
-    #plt.axis('equal')
-    plt.xlim([-0.5,1.5])
-    plt.ylim([-0.5, 5])
+    plt.axis('equal')
+    plt.xlim([-0.5,3])
+    plt.ylim([-0.5, 2.5])
     plt.xlabel('x-coordinate')
     plt.ylabel('y-coordinate')
     l2, = axy_pos.plot(x[0,0],x[1,0],'b-')
     l3, = axy_pos.plot(start_pred[3,:], start_pred[4,:],'g-')
+    rect1 = Rectangle(((0-(0.08/2)),(0-(0.3/2))),0.08,0.3,
+                angle=np.rad2deg(xinit[2]),
+                edgecolor='black',
+                facecolor='none',
+                lw=0.4)
+    axy_pos.add_patch(rect1)
+    rect2 = Rectangle(((0-(0.08/2)),(0-(0.3/2))),0.08,0.3,
+                angle=np.rad2deg(xinit[2]),
+                edgecolor='grey',
+                facecolor='none',
+                lw=0.4)
+    axy_pos.add_patch(rect2)
     axy_pos.legend([l0,l1,l2,l3],['desired trajectory','init pos','robot trajectory',\
         'predicted robot traj.'],loc='lower right')
 
 
-    # Plot trajectory psi
-    axz_pos = fig.add_subplot(gs[:,1])
-    # l0, = axz_pos.plot(np.transpose(path_points[0,:]), np.transpose(path_points[2,:]), 'rx')
-    l0, = axz_pos.plot(np.transpose(path_points[2,:]), 'rx')
-    l1, = axz_pos.plot(xinit[0], xinit[2], 'bx')
-    plt.title('Position psi')
-    #plt.axis('equal')
-    # plt.xlim([-1.,2.])
-    plt.xlim([0., sim_length-1])
-    plt.ylim([-0.1, 0.1])
-    plt.xlabel('timestep')
-    plt.ylabel('psi-angle')
-    # l2, = axz_pos.plot(x[0,0],x[2,0],'b-')
-    # l3, = axz_pos.plot(start_pred[3,:], start_pred[5,:],'g-')
-    l2, = axz_pos.plot(0.,x[2,0],'b-')
-    l3, = axz_pos.plot(start_pred[2,:],'g-')
-    axz_pos.legend([l0,l1,l2,l3],['desired trajectory','init pos','robot trajectory',\
-        'predicted robot traj.'],loc='lower right')
+    # # Plot trajectory psi
+    # axz_pos = fig.add_subplot(gs[:,1])
+    # # l0, = axz_pos.plot(np.transpose(path_points[0,:]), np.transpose(path_points[2,:]), 'rx')
+    # l0, = axz_pos.plot(np.transpose(path_points[2,:]), 'rx')
+    # l1, = axz_pos.plot(0, np.rad2deg(xinit[2]), 'bx')
+    # plt.title('Position psi')
+    # #plt.axis('equal')
+    # # plt.xlim([-1.,2.])
+    # plt.xlim([-5, sim_length-1])
+    # plt.ylim([-100, 100])
+    # plt.xlabel('timestep')
+    # plt.ylabel('psi-angle')
+    # # l2, = axz_pos.plot(x[0,0],x[2,0],'b-')
+    # # l3, = axz_pos.plot(start_pred[3,:], start_pred[5,:],'g-')
+    # l2, = axz_pos.plot(0.,np.rad2deg(x[2,0]),'b-')
+    # l3, = axz_pos.plot(np.rad2deg(start_pred[2,:]),'g-')
+    # axz_pos.legend([l0,l1,l2,l3],['desired trajectory','init pos','robot trajectory',\
+    #     'predicted robot traj.'],loc='lower right')
     
     # Plot velocity
     ax_velx = fig.add_subplot(6,4,3)
@@ -544,7 +581,7 @@ def createPlot(x,u,start_pred,sim_length,model,path_points,xinit):
 
     # # Make plot fullscreen. Comment out if platform dependent errors occur.
     mng = plt.get_current_fig_manager()
-    # plt.pause(20)
+    plt.pause(0.1)
 
     # # TRYING NEW 3D PLOT........................................................................................................
     # plt.figure('2')
@@ -577,7 +614,7 @@ def main():
 
     # Simulation
     # ----------
-    sim_length = 80 # simulate 8sec
+    sim_length = 100 # simulate 8sec
 
     # Variables for storing simulation data
     x = np.zeros((model.neq,sim_length+1)) # states
@@ -587,7 +624,7 @@ def main():
     x0i = np.zeros((model.nvar,1))
     x0 = np.transpose(np.tile(x0i, (1, model.N)))
     # Set initial condition
-    xinit = np.transpose(np.array([0.3, 0., 0., 0., 0., 0.]))
+    xinit = np.transpose(np.array([0, 0, 0, 0., 0., 0.]))
     x[:,0] = xinit
 
     problem = {"x0": x0,
@@ -613,8 +650,8 @@ def main():
         problem["all_parameters"] = np.reshape(np.transpose(next_path_points), \
             (model.npar*model.N,1))
 
-        print(f"problem {problem}")
-        print('Solve', k, problem["xinit"])
+        # print(f"problem {problem}")
+        # print('Solve', k, problem["xinit"])
 
         # Time to solve the NLP!
         output, exitflag, info = solver.solve(problem)

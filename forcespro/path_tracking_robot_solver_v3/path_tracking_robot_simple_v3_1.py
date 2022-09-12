@@ -335,7 +335,7 @@ def updatePlots(x,u,pred_x,pred_u,model,k):
                 angle=np.rad2deg(x[2,k+1]),
                 edgecolor='black',
                 facecolor='none',
-                lw=1)
+                lw=2)
     ax_list[0].add_patch(rect1)
     rect2 = Rectangle(((x[0,k]-(0.33/2)),(x[1,k]-(1.2/2))),0.33,1.2,
                 angle=np.rad2deg(x[2,k]),
@@ -426,13 +426,13 @@ def createPlot(x,u,start_pred,sim_length,model,path_points,xinit):
                 angle=np.rad2deg(xinit[2]),
                 edgecolor='black',
                 facecolor='none',
-                lw=0.4)
+                lw=0.5)
     axy_pos.add_patch(rect1)
     rect2 = Rectangle(((0-(0.33/2)),(0-(1.2/2))),0.33,1.2,
                 angle=np.rad2deg(xinit[2]),
                 edgecolor='grey',
                 facecolor='none',
-                lw=0.4)
+                lw=0.3)
     axy_pos.add_patch(rect2)
     axy_pos.legend([l0,l1,l2,l3],['desired trajectory','init pos','robot trajectory',\
         'predicted robot traj.'],loc='lower right')

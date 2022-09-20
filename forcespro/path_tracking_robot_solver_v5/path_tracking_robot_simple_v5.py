@@ -92,19 +92,28 @@ def continuous_dynamics(x, u):
     if np.isnan(psi):
         psi = 0
     # R = np.array([[np.cos(psi), -np.sin(psi), 0],[np.sin(psi), np.cos(psi), 0],[0,0,1]])   
-    R = np.array([[np.cos(psi)*np.cos(theta), -np.sin(psi)*np.cos(phi)+np.cos(psi)*np.sin(theta)*np.sin(phi), np.sin(psi)*np.sin(phi)+np.cos(psi)*np.cos(theta)*np.sin(phi)],
-            [np.sin(psi)*np.cos(theta), np.cos(psi)*np.cos(phi)+np.sin(psi)*np.sin(theta)*np.sin(phi), -np.cos(psi)*np.sin(phi)+np.sin(psi)*np.sin(theta)*np.cos(phi)],
-            [-np.sin(theta),np.cos(theta)*np.sin(phi),np.cos(theta)*np.cos(phi)]])   
+    R = np.array([[ np.cos(psi)*np.cos(theta), -np.sin(psi)*np.cos(phi)+np.cos(psi)*np.sin(theta)*np.sin(phi),  np.sin(psi)*np.sin(phi)+np.cos(psi)*np.cos(theta)*np.sin(phi)],
+                  [ np.sin(psi)*np.cos(theta),  np.cos(psi)*np.cos(phi)+np.sin(psi)*np.sin(theta)*np.sin(phi), -np.cos(psi)*np.sin(phi)+np.sin(psi)*np.sin(theta)*np.cos(phi)],
+                  [-np.sin(theta),              np.cos(theta)*np.sin(phi),                                      np.cos(theta)*np.cos(phi)]])   
     B = np.array([[1,1,1,1,0,0,0,0],[0,0,0,0,1,1,0,0],[0,0,0,0,0,0,1,1],[0,0,0,0,-0.21,0.21,0.34,-0.34],[0.21,0.21,-0.21,-0.21,0,0,0,0],[0.34,-0.34,-0.34,0.34,0,0,0,0]])
     T = np.array([[1,np.sin(phi)*np.tan(theta), np.cos(phi)*np.tan(theta)],[0,np.cos(phi), -np.sin(phi)],[0,np.sin(phi)/np.cos(theta),np.cos(phi)/np.cos(theta)]])
     J = np.vstack((np.hstack((R, np.zeros((3,3)))), np.hstack((np.zeros((3,3)),T))))
+    # ---- restoring forces -----------------------------------------------------------
     g_n = np.array([ (W-b)*np.sin(theta), 
                     -(W-b)*np.cos(theta)*np.sin(phi), 
                     -(W-b)*np.cos(theta)*np.cos(phi), 
                     -(y_g*W-y_b*b)*np.cos(theta)*np.cos(phi) + (z_g*W-z_b*b)*np.cos(theta)*np.sin(phi),
                      (z_g*W-z_b*b)*np.sin(theta)             + (x_g*W-x_b*b)*np.cos(theta)*np.cos(phi),
                     -(x_g*W-x_b*b)*np.cos(theta)*np.sin(phi) - (y_g*W-y_b*b)*np.sin(theta)])
-    dx = casadi.vertcat(J@v, Minv@(B@u-g_n))
+    # ---- /restoring forces -----------------------------------------------------------
+    # ---- damping --------------------------------------------------------------------
+    d_l = np.array([4, 6, 5, 0.07, 0.07, 0.07])
+    d_nl = np.array([18, 21, 37, 1.5, 1.5, 1.5])
+    # d = np.array([d_l*v + d_nl*(np.diag(np.abs(v))@v)])
+    # d = np.array([d_l*v])
+    d = casadi.horzcat(d_l*v + d_nl*(casadi.diag(casadi.fabs(v))@v))
+    # ---- /damping -------------------------------------------------------------------
+    dx = casadi.vertcat(J@v, Minv@(B@u-d-g_n))
     # print(f" dx : {dx}")
     # dx1 = casadi.vertcat(x[3], x[4], x[5], u[0]/m, u[1]/m, u[2]/Izz)
     # print(f" dx1 : {dx1}")
@@ -132,9 +141,9 @@ def obj(z,current_target):
 #                                               path in y-direction
             + 10000*(z[5+5]-current_target[2])**2 # costs on deviating on the
  #                                               path in z-direction
-            + 10000*(z[6+5]-current_target[3])**2 
-            + 10000*(z[7+5]-current_target[4])**2 
-            + 10000*(z[8+5]-current_target[5])**2 
+            + 100*(z[6+5]-current_target[3])**2 
+            + 100*(z[7+5]-current_target[4])**2 
+            + 100*(z[8+5]-current_target[5])**2 
             + 0.0001*z[0]**2 # penalty on input u1
             + 0.0001*z[1]**2 # penalty on input u2
             + 0.0001*z[2]**2 # penalty on input u3
@@ -156,9 +165,9 @@ def objN(z,current_target):
 #                                               path in y-direction
         + 20000*(z[5+5]-current_target[2])**2 # costs on deviating on the
 #                                               path in z-direction
-        + 20000*(z[6+5]-current_target[3])**2 
-        + 20000*(z[7+5]-current_target[4])**2 
-        + 20000*(z[8+5]-current_target[5])**2 
+        + 200*(z[6+5]-current_target[3])**2 
+        + 200*(z[7+5]-current_target[4])**2 
+        + 200*(z[8+5]-current_target[5])**2 
         + 0.0002*z[0]**2 # penalty on input u1
         + 0.0002*z[1]**2 # penalty on input u2
         + 0.0002*z[2]**2 # penalty on input u3
@@ -264,6 +273,8 @@ def generate_pathplanner():
     # model.ub = np.array([+100.,  +100.,   100., +100.,  +100.,  100., +100.,   100.,   20.,   20.,   20.,   20.,   20.,   20.,   10.,  10.,  10.,   10.,  10.,  10.])
     model.lb = np.array([-28.,  -28.,  -28., -28.,  -28., -28., -28.,  -28.,  -20.,  -20.,  -20., -20.,  -20.,  -20.,  -0.5, -0.5, -0.5, -0.5, -0.5, -0.5])
     model.ub = np.array([+36.,  +36.,   36., +36.,  +36.,  36., +36.,   36.,   20.,   20.,   20.,   20.,   20.,   20.,   0.5,  0.5,  0.5,   0.5,  0.5,  0.5])
+    # model.lb = np.array([-28.,  -28.,  -28., -28.,  -28., -28., -28.,  -28.,  -20.,  -20.,  -20., -20.,  -20.,  -20.,  -0.25, -0.25, -0.25, -0.25, -0.25, -0.25])
+    # model.ub = np.array([+36.,  +36.,   36., +36.,  +36.,  36., +36.,   36.,   20.,   20.,   20.,   20.,   20.,   20.,   0.25,  0.25,  0.25,   0.25,  0.25,  0.25])
 
     # Initial condition on vehicle states x
     model.xinitidx = range((model.nvar-model.neq),model.nvar) # use this to specify on which variables initial conditions
@@ -663,10 +674,11 @@ def createPlot(x,u,start_pred,sim_length,model,path_points,xinit):
 
     # # Make plot fullscreen. Comment out if platform dependent errors occur.
     mng = plt.get_current_fig_manager()
+    # fig.canvas.manager.full_screen_toggle() # toggle fullscreen mode
     plt.pause(0.1)
 
     # TRYING NEW 3D PLOT........................................................................................................
-    plt.figure('2')
+    fig = plt.figure('2')
 
     # syntax for 3-D projection
     ax3d = plt.axes(projection ='3d')
@@ -685,6 +697,7 @@ def createPlot(x,u,start_pred,sim_length,model,path_points,xinit):
     plt.xlim([-1,1.])
     plt.ylim([-0.5, 5.5])
     ax3d.set_zlim(-2.5,0.5)
+    # fig.canvas.manager.full_screen_toggle() # toggle fullscreen mode
     # plt.show()
     # plt.pause(20)
     # ...........................................................................................................................

@@ -66,6 +66,15 @@ def continuous_dynamics(x, u):
     #                         u[1] / m,   # dVy/dt = Fy/m    
     #                         u[2] / m)   # dVz/dt = Fz/m 
     m = 40.89
+    g = 9.81
+    W = m*g
+    b = W
+    x_g = 0
+    y_g = 0
+    z_g = 0.3
+    x_b = 0
+    y_b = 0
+    z_b = -0.3
     Ixx = 3.05
     Iyy = 1.198
     Izz = 2.36
@@ -89,7 +98,13 @@ def continuous_dynamics(x, u):
     B = np.array([[1,1,1,1,0,0,0,0],[0,0,0,0,1,1,0,0],[0,0,0,0,0,0,1,1],[0,0,0,0,-0.21,0.21,0.34,-0.34],[0.21,0.21,-0.21,-0.21,0,0,0,0],[0.34,-0.34,-0.34,0.34,0,0,0,0]])
     T = np.array([[1,np.sin(phi)*np.tan(theta), np.cos(phi)*np.tan(theta)],[0,np.cos(phi), -np.sin(phi)],[0,np.sin(phi)/np.cos(theta),np.cos(phi)/np.cos(theta)]])
     J = np.vstack((np.hstack((R, np.zeros((3,3)))), np.hstack((np.zeros((3,3)),T))))
-    dx = casadi.vertcat(J@v, Minv@(B@u))
+    g_n = np.array([ (W-b)*np.sin(theta), 
+                    -(W-b)*np.cos(theta)*np.sin(phi), 
+                    -(W-b)*np.cos(theta)*np.cos(phi), 
+                    -(y_g*W-y_b*b)*np.cos(theta)*np.cos(phi) + (z_g*W-z_b*b)*np.cos(theta)*np.sin(phi),
+                     (z_g*W-z_b*b)*np.sin(theta)             + (x_g*W-x_b*b)*np.cos(theta)*np.cos(phi),
+                    -(x_g*W-x_b*b)*np.cos(theta)*np.sin(phi) - (y_g*W-y_b*b)*np.sin(theta)])
+    dx = casadi.vertcat(J@v, Minv@(B@u-g_n))
     # print(f" dx : {dx}")
     # dx1 = casadi.vertcat(x[3], x[4], x[5], u[0]/m, u[1]/m, u[2]/Izz)
     # print(f" dx1 : {dx1}")
@@ -218,7 +233,7 @@ def generate_pathplanner():
 
     # Problem dimensions
     model = forcespro.nlp.SymbolicModel()
-    model.N = 15  # horizon length
+    model.N = 10  # horizon length
     model.nvar = 20  # number of variables
     model.neq = 12  # number of equality constraints
     model.npar = 6 # number of runtime parameters
@@ -231,7 +246,7 @@ def generate_pathplanner():
     # available.
 
     # We use an explicit RK4 integrator here to discretize continuous dynamics
-    integrator_stepsize = 0.1 ## decrease the stepsize!
+    integrator_stepsize = 0.05 ## decrease the stepsize!
     model.eq = lambda z: forcespro.nlp.integrate(continuous_dynamics, z[(model.nvar-model.neq):model.nvar], z[0:(model.nvar-model.neq)],
                                                 integrator=forcespro.nlp.integrators.RK4,
                                                 stepsize=integrator_stepsize)
@@ -274,6 +289,7 @@ def generate_pathplanner():
     codeoptions.sqp_nlp.maxqps = 1      # maximum number of quadratic problems to be solved
     # codeoptions.sqp_nlp.reg_hessian = 5e-9 # increase this if exitflag=-8
     codeoptions.sqp_nlp.reg_hessian = 5e-3 # increase this if exitflag=-8
+    # codeoptions.sqp_nlp.reg_hessian = 5e-1 # increase this if exitflag=-8
     # change this to your server or leave uncommented for using the 
     # standard embotech server at https://forces.embotech.com 
     # codeoptions.server = 'https://forces.embotech.com'

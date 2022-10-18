@@ -24,9 +24,9 @@
 <sdf version="1.4">
   <world name="oceans_waves">
     <physics name="default_physics" default="true" type="ode">
-      <max_step_size>0.002</max_step_size>
+      <max_step_size>0.01</max_step_size>
       <real_time_factor>1</real_time_factor>
-      <real_time_update_rate>500</real_time_update_rate>
+      <real_time_update_rate>100</real_time_update_rate>
     </physics>
     <scene>
       <ambient>0.01 0.01 0.01 1.0</ambient>
@@ -61,6 +61,31 @@
       <direction>-0.3 -0.3 -1</direction>
       <cast_shadows>false</cast_shadows>
     </light>
+    
+        <!-- Global light source -->
+    <light type="directional" name="sun_diffuse_1">
+      <pose>-200 -200 100 0 0 0</pose>
+      <diffuse>0.6 0.6 0.6 1</diffuse>
+      <specular>0 0 0 1</specular>
+      <direction>-0.3 -0.3 -1</direction>
+      <cast_shadows>true</cast_shadows>
+    </light>
+
+    <light type="directional" name="sun_diffuse_2">
+      <pose>-100 50 200 0 0 0</pose>
+      <diffuse>0.6 0.6 0.6 1</diffuse>
+      <specular>0 0 0 1</specular>
+      <direction>-0.3 -0.3 -1</direction>
+      <cast_shadows>true</cast_shadows>
+    </light>
+
+    <light type="directional" name="sun_diffuse_3">
+      <pose>-150 -130 50 0 0 0</pose>
+      <diffuse>0.6 0.6 0.6 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <direction>0.5 0.5 -1</direction>
+      <cast_shadows>true</cast_shadows>
+    </light>
 
     <!-- Virtual NED frame -->
     <include>
@@ -72,6 +97,12 @@
     <include>
       <uri>model://ocean</uri>
       <pose>0 0 0 0 0 0</pose>
+    </include>
+    
+        <!-- Wall model -->
+    <include>
+      <uri>model://long_brick_wall_model</uri>
+      <pose>-1 15 -10 0 0 -1.57</pose>
     </include>
 
     <!-- Heightmap -->

@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<sdf version="1.4">
+    <model name='long brick wall_model'>
+     <static>1</static>
+      <pose frame=''>0 0 0 0 0 -1.57</pose>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry>      
+               <mesh>
+               <uri>model://long_brick_wall_model/meshes/bigbrickwall.dae</uri>
+             </mesh>
+          </geometry>
+        </collision>
+        <visual name='visual'>
+          <geometry>
+             <mesh>
+              <uri>model://long_brick_wall_model/meshes/bigbrickwall.dae</uri>
+             </mesh>
+          </geometry>
+        </visual>
+
+        
+      </link>      
+    </model>
+</sdf>
+
+
+
+
+

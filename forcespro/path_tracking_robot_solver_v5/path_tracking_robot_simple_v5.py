@@ -65,7 +65,7 @@ def continuous_dynamics(x, u):
     #                         u[0] / m,   # dVx/dt = Fx/m
     #                         u[1] / m,   # dVy/dt = Fy/m    
     #                         u[2] / m)   # dVz/dt = Fz/m 
-    m = 40.89
+    m = 26.33 #26.33 for raybot_prototype_v1, 40.89 for old
     g = 9.81
     W = m*g
     b = W
@@ -75,11 +75,11 @@ def continuous_dynamics(x, u):
     x_b = 0
     y_b = 0
     z_b = -0.3
-    Ixx = 3.05
-    Iyy = 1.198
-    Izz = 2.36
+    Ixx = 6.28 #6.28 for raybot_prototype_v1, 3.05 for old
+    Iyy = 1.96 #1.96 for raybot_prototype_v1, 1.198 for old
+    Izz = 5.32 #5.32 for raybot_prototype_v1, 2.36 for old
     M = casadi.diag([m,m,m,Ixx,Iyy,Izz])
-    AM = casadi.diag([53.56, 10.3, 23.6, 0.784, 0.564, 1.367])
+    AM = casadi.diag([27.96, 20.35, 29.58, 3.90, 1.48, 4.06]) #(27.96, 20.35, 29.58, 3.90, 1.48, 4.06) for raybot_prototype_v1, (53.56, 10.3, 23.6, 0.784, 0.564, 1.367) for old
     Minv = casadi.inv((M+AM))
     v = x[6:12]
     phi = float(x[3])
@@ -107,8 +107,9 @@ def continuous_dynamics(x, u):
                     -(x_g*W-x_b*b)*np.cos(theta)*np.sin(phi) - (y_g*W-y_b*b)*np.sin(theta)])
     # ---- /restoring forces -----------------------------------------------------------
     # ---- damping --------------------------------------------------------------------
-    d_l = np.array([4, 6, 5, 0.07, 0.07, 0.07])
-    d_nl = np.array([18, 21, 37, 1.5, 1.5, 1.5])
+
+    d_l = np.array([4, 6, 5, 0.07, 0.07, 0.07]) #need to check this for raybot_prototype_v1
+    d_nl = np.array([18, 21, 37, 1.5, 1.5, 1.5]) #need to check this for raybot_prototype_v1
     # d = np.array([d_l*v + d_nl*(np.diag(np.abs(v))@v)])
     # d = np.array([d_l*v])
     d = casadi.horzcat(d_l*v + d_nl*(casadi.diag(casadi.fabs(v))@v))

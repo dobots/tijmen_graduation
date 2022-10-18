@@ -1,11 +1,11 @@
 /**:
   ros__parameters:
     pid:
-      mass: 40.89
+      mass: 26.33
       inertial:
-        ixx: 1.19804
+        ixx: 1.96
         ixy: 0
-        ixz: 0.00124
-        iyy: 2.36173
+        ixz: 0
+        iyy: 5.32
         iyz: 0
-        izz: 3.04999
+        izz: 6.28

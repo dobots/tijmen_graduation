@@ -213,6 +213,8 @@ class ThrusterManager(Node):
                 if list not in [type(params), type(conv_fcn)]:
                     # Unpack parameters to values
                     deduced_params = {key: val.value for key, val in params.items()}
+                    self.get_logger().info('creating deduced params: **deduced -------------------------------------------------------------------------------------------------------')
+                    self.get_logger().info(str(deduced_params))
                     thruster = Thruster.create_thruster(
                         self, conv_fcn, i, topic, None, None,
                         **deduced_params)
@@ -227,7 +229,15 @@ class ThrusterManager(Node):
                     RuntimeError('Invalid thruster conversion '
                                        'function=%s'
                                        % self.config['conversion_fcn'].value)
+                self.get_logger().info('creating deduced params: conv_fcn[i] -------------------------------------------------------------------------------------------------------')
+                self.get_logger().info(str(conv_fcn))
+                self.get_logger().info('creating deduced params: i -------------------------------------------------------------------------------------------------------')
+                self.get_logger().info(str(i))
+                self.get_logger().info('creating deduced params: topic -------------------------------------------------------------------------------------------------------')
+                self.get_logger().info(str(topic))
                 self.thrusters.append(thruster)
+                self.get_logger().info(str(self.thrusters))
+                self.get_logger().info('creating thruster list here -------------------------------------------------------------------------------------------------------')
 
             self.get_logger().info('Thruster allocation matrix provided!')
             self.get_logger().info('TAM=')
@@ -416,6 +426,8 @@ class ThrusterManager(Node):
     #==============================================================================
     def command_thrusters(self):
         """Publish the thruster input into their specific topic."""
+        # self.get_logger().info(str(self.thrusters[1]))
+        # self.get_logger().info(str(self.thrust[1]))
         if self.thrust is None:
             return
         for i in range(self.n_thrusters):

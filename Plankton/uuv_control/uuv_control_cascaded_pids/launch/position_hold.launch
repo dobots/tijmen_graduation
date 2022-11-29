@@ -7,7 +7,7 @@
     <arg name="model_name" value="$(var model_name)" />
   </include>
 
-  <executable cmd="ros2 bag record -o pid_control /raybot/pose_gt /raybot/thrusters/id_0/input /raybot/thrusters/id_1/input /raybot/thrusters/id_2/input /raybot/thrusters/id_3/input /raybot/thrusters/id_4/input /raybot/thrusters/id_5/input /raybot/thrusters/id_6/input /raybot/thrusters/id_7/input " output="screen" />
+ <!-- <executable cmd="ros2 bag record -o pid_control /raybot/pose_gt /raybot/thrusters/id_0/thrust /raybot/thrusters/id_1/thrust /raybot/thrusters/id_2/thrust /raybot/thrusters/id_3/thrust /raybot/thrusters/id_4/thrust /raybot/thrusters/id_5/thrust /raybot/thrusters/id_6/thrust /raybot/thrusters/id_7/thrust " output="screen" /> -->
 
   <group>
     <push-ros-namespace namespace="$(var uuv_name)"/>

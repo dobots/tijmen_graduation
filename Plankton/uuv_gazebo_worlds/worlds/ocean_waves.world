@@ -24,6 +24,16 @@
 <sdf version="1.4">
   <world name="oceans_waves">
     <physics name="default_physics" default="true" type="ode">
+    <ode>
+    	<solver>
+      		<type>quick</type>
+      	</solver> 
+   <!--      <solver>
+          <type>quick</type>
+          <iters>50</iters>
+          <sor>1.2</sor>
+        </solver>  -->
+      </ode> 
       <max_step_size>0.01</max_step_size>
       <real_time_factor>1</real_time_factor>
       <real_time_update_rate>100</real_time_update_rate>

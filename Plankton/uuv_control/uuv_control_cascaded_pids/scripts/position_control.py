@@ -46,6 +46,8 @@ from transforms3d.euler import euler2quat
 from nav_msgs.msg import Path
 from geometry_msgs.msg import PoseStamped
 
+import time
+
 class PositionControllerNode(Node):
     def __init__(self, name, **kwargs):
         super().__init__(name, **kwargs)
@@ -103,6 +105,7 @@ class PositionControllerNode(Node):
         if not bool(self.config):
             return
 
+        tic = time.perf_counter()
         p = msg.pose.pose.position
         q = msg.pose.pose.orientation
         p = np.array([p.x, p.y, p.z])
@@ -161,6 +164,10 @@ class PositionControllerNode(Node):
         cmd_vel.linear = geometry_msgs.Vector3(x=v_linear[0], y=v_linear[1], z=v_linear[2])
         cmd_vel.angular = geometry_msgs.Vector3(x=v_angular[0], y=v_angular[1], z=v_angular[2])
         self.pub_cmd_vel.publish(cmd_vel)
+        toc = time.perf_counter()
+        print(f'time for one callback:{toc-tic}')
+        print('--------------------------------------------------------------------------')
+
 
     #==============================================================================
     def callback_params(self, data):

@@ -67,7 +67,7 @@ class VelocityControllerNode(Node):
         self.create_pids(self.config)
 
         # ROS infrastructure
-        self.sub_cmd_vel = self.create_subscription(geometry_msgs.Twist, '/raybot/cmd_vel', self.cmd_vel_callback, 10)
+        self.sub_cmd_vel = self.create_subscription(geometry_msgs.Twist, '/rexrov/cmd_vel', self.cmd_vel_callback, 10)
         self.sub_odometry = self.create_subscription(Odometry, 'odom', self.odometry_callback, 10)
         self.pub_cmd_accel = self.create_publisher( geometry_msgs.Accel, 'cmd_accel', 10)
 

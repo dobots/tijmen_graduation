@@ -2,6 +2,11 @@ import matplotlib.pyplot as plt
 import csv
 import numpy as np
 from matplotlib.gridspec import GridSpec
+import math
+from sklearn.metrics import mean_squared_error
+from scipy import interpolate
+from scipy.ndimage import interpolation
+
 
 def calc_points_on_ellipse(num_points):
     """Desired trajectory on ellipoid represented by 2D points"""
@@ -372,8 +377,62 @@ fig = plt.figure('2')
 plt.plot(y_pid, z_pid, label='PID')
 plt.plot(y_mpc, z_mpc, label='MPC')
 path_points = calc_points_on_ellipse(100)
-print(f'path_points:{path_points}')
+# print(f'path_points:{path_points}')
 plt.plot(path_points[1,:], path_points[2,:], label='path', color='k', linestyle='dashed')  
+# plt.xticks(rotation = 25)
+plt.xlabel('y [m]')
+plt.ylabel('z [m]')
+plt.title('raybot y and z-position')
+# plt.grid()
+plt.legend()
+
+### KPIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII-------------------------------------------------------------------------------------------------
+#RMSE PID y
+
+path_inter_pid_y = interpolation.zoom(path_points[1,:], np.size(y_pid)/np.size(path_points[1,:]))
+# print(np.size(y_pid))
+# print(np.size(path_inter_pid_y))
+MSE = np.square(np.subtract(y_pid, path_inter_pid_y)).mean()
+RMSE = math.sqrt(MSE)
+print(f'RMSE path pid y: {RMSE}')
+
+path_mpc_y = path_points[1,69:]
+path_inter_mpc_y = interpolation.zoom(path_mpc_y, np.size(y_mpc)/np.size(path_mpc_y))
+# print(np.size(y_mpc))
+# print(np.size(path_inter_mpc_y))
+# print(f'path mpc: {path_inter_mpc_y}')
+# print(f'y_mpc: {y_mpc}')
+MSE = np.square(np.subtract(y_mpc, path_inter_mpc_y)).mean()
+RMSE = math.sqrt(MSE)
+print(f'RMSE path mpc y: {RMSE}')
+
+rmse_table = np.zeros([100,20])
+for i in range(100):
+    path_mpc_z = path_points[2,i:]
+    for ii in range(20):
+        zz_mpc = z_mpc[0:-ii-1]
+        # print(f'path_mpc_z:{path_mpc_z}')
+        path_inter_mpc_z = interpolation.zoom(path_mpc_z, np.size(zz_mpc)/np.size(path_mpc_z))
+        # print(np.size(z_mpc))
+        # print(np.size(path_inter_mpc_z))
+        # print(f'path mpc z: {np.transpose(path_inter_mpc_z)}')
+        # print(f'z_mpc: {z_mpc}')
+        MSE = np.square(np.subtract(zz_mpc, path_inter_mpc_z)).mean()
+        RMSE = math.sqrt(MSE)
+        # print(f'RMSE path mpc z: {RMSE}')
+        rmse_table[i,ii] = RMSE
+print(f'rmse_table:{rmse_table}')
+indexes = np.unravel_index(np.argmin(rmse_table, axis=None), rmse_table.shape)
+print(f'indexes: {indexes}')
+print(f'lowest rmse: {rmse_table[indexes]}')
+
+plt.figure('4') 
+
+plt.plot(np.arange(0, np.size(y_mpc),1), path_inter_mpc_y, label='MPC path')
+plt.plot(np.arange(0, np.size(y_mpc),1),y_mpc, label='MPC')
+# path_points = calc_points_on_ellipse(100)
+# print(f'path_points:{path_points}')
+# plt.plot(path_points[1,:], path_points[2,:], label='path', color='k', linestyle='dashed')  
 # plt.xticks(rotation = 25)
 plt.xlabel('y [m]')
 plt.ylabel('z [m]')

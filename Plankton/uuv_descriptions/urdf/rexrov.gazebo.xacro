@@ -30,7 +30,7 @@
     <xacro:property name="cob" value="0.0 0.0 0.3"/>
 
     <!-- Volume, see p.31 in Berg2012 -->
-    <xacro:property name="volume" value="1.83826"/>
+    <xacro:property name="volume" value="1.81"/> <!-- 1.83826 -->
 
     <xacro:macro name="rexrov_hydro_model" params="namespace">
         <link name="${namespace}/base_link">

@@ -71,7 +71,7 @@ from uuv_thrusters.models import Thruster
 import time
 from transforms3d.euler import quat2euler
 from transforms3d.euler import euler2quat
-
+import csv
 
 class MPCPublisherSubscriber(Node):
 
@@ -79,7 +79,7 @@ class MPCPublisherSubscriber(Node):
         super().__init__('mpc_controller')
         self.publisher_ = self.create_publisher(Path, '/raybot/planned_path', 10)
         self.traj_pub = self.create_publisher(Path, '/raybot/trajectory_marker', 10) 
-        timer_period = .05  # seconds
+        timer_period = 0.5  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
         self.i = 0
         self.subscription = self.create_subscription(
@@ -89,7 +89,12 @@ class MPCPublisherSubscriber(Node):
             10)
         self.subscription  # prevent unused variable warning
         self.pose_twist = np.zeros(12)
-        self.pose_twist[2] = -2
+        self.pose_quat = np.zeros(13)
+        self.pose_quat[6] = 1
+        self.pose_quat[2] = -2
+        self.pose_twist[2] = -1.9
+        self.pose_twist[1] = 0.1
+        # self.pose_twist[5] = 1.57
         self.n_thrusters = 8
         self.thrusters = list()
         for i in range(self.n_thrusters):
@@ -104,12 +109,23 @@ class MPCPublisherSubscriber(Node):
         self.model, self.solver = generate_pathplanner(self.create_new_solver)        
         
         # Create 2D points on ellipse which the robot is supposed to follow
-        self.num_points = 100
+        self.num_points = 20
         self.path_points = calc_points_on_ellipse(self.num_points)
+        self.comp_time = np.empty((0,1))
+        self.comp_time_list = []
+        self.u_list = []
+        self.x_list = []
+        self.time_list = []
+        self.results = np.array([])
+        self.driekeer = 0
 
 
     def listener_callback(self, msg):
         # angles_twist = quat2euler([msg.twist.twist.angular.w, msg.twist.twist.angular.x,msg.twist.twist.angular.y,msg.twist.twist.angular.z])
+        # self.pose_quat = np.array([msg.pose.pose.position.x,    msg.pose.pose.position.y,    msg.pose.pose.position.z, 
+        #                             msg.pose.pose.orientation.w, msg.pose.pose.orientation.x,msg.pose.pose.orientation.y,msg.pose.pose.orientation.z,
+        #                             msg.twist.twist.linear.x,    msg.twist.twist.linear.y,    msg.twist.twist.linear.z, 
+        #                             msg.twist.twist.angular.x,msg.twist.twist.angular.y,msg.twist.twist.angular.z])
         angles_pose = quat2euler([msg.pose.pose.orientation.w, msg.pose.pose.orientation.x,msg.pose.pose.orientation.y,msg.pose.pose.orientation.z])
         angles_twist = np.array([msg.twist.twist.angular.x,msg.twist.twist.angular.y,msg.twist.twist.angular.z])
         # angles_pose = np.array([msg.pose.pose.orientation.x,msg.pose.pose.orientation.y,msg.pose.pose.orientation.z])
@@ -129,6 +145,7 @@ class MPCPublisherSubscriber(Node):
         # self.get_logger().info('Publishing x_linear: "%s"' % self.pose_twist)
         self.i += 1
         tic = time.perf_counter()
+        # print(f' time tic: {tic}')
 
         # plot_results = 0
         # # generate code for estimator
@@ -146,9 +163,11 @@ class MPCPublisherSubscriber(Node):
         # Set initial guess to start solver from
         x0i = np.zeros((self.model.nvar,1))
         x0 = np.transpose(np.tile(x0i, (1, self.model.N)))
+        # print(f'x0:{x0}')
         # Set initial condition
         # xinit = np.transpose(np.array([0, 0, 0, 0., 0., 0.,0, 0, 0, 0., 0., 0.]))
         xinit = self.pose_twist
+        # xinit = self.pose_quat
         # print(f'xinitt: {xinit}')
         x[:,0] = xinit
 
@@ -190,20 +209,21 @@ class MPCPublisherSubscriber(Node):
         for k in range(sim_length):
             
             # Set initial condition
-            problem["xinit"] = x[:,k]
-
+            # problem["xinit"] = x[:,k]
+            problem["xinit"] = self.pose_twist
             # Set runtime parameters (here, the next N points on the path)
             next_path_points = extract_next_path_points(self.path_points, x[0:self.model.npar,k], self.model.N)
+            # print(f'next_path_points: = {next_path_points}')
             problem["all_parameters"] = np.reshape(np.transpose(next_path_points), \
                 (self.model.npar*self.model.N,1))
-
+            print(f'next_path_points - xinit: {next_path_points[:,0]- xinit[0:6]}')
             # print(f"problem {problem}")
-            # print('Solve', k, problem["xinit"])
+            print('Solve', k, problem["xinit"])
 
             # Time to solve the NLP!
             output, exitflag, info = self.solver.solve(problem)
             print(f"exitflag = {exitflag}")
-
+            # print(f'output: {output}')
             # Make sure the solver has exited properly.
             assert exitflag == 1, "bad exitflag"
             sys.stderr.write("FORCESPRO took {} iterations and {} seconds to solve the problem.\n"\
@@ -219,8 +239,11 @@ class MPCPublisherSubscriber(Node):
             # Apply optimized input u of first stage to system and save simulation data
             u[:,k] = pred_u[:,0] #+ np.random.normal(0,0.1,1)                                               #CAN INPUT DISTURBANCES HERE!!!
             x[:,k+1] = np.transpose(self.model.eq(np.concatenate((u[:,k],x[:,k]))))
-            # print(f'prediction u = {u[:,k]}')
-
+            # casadi.horzcat
+            # x[:,k+1] = np.transpose(self.model.eq(casadi.horzcat((u[:,k],x[:,k]))))
+            # x[:,k+1] = self.model.eq(casadi.horzcat((u[:,k],x[:,k])))
+            print(f'u at k = {u[:,k]}')
+            print(f'x at k = {x[:,k]}')
 
             for i in range(self.n_thrusters):
                 self.thrusters[i].publish_command(u[i,k])
@@ -229,24 +252,25 @@ class MPCPublisherSubscriber(Node):
             # print(f'pred_x y= {pred_x[1,:]}')
             # print(f'pred_x z= {pred_x[2,:]}')
             # print('--------------------------------------------------------------------------')
-            msg = Path()
-            msg.header.frame_id = "/map"
-            msg.header.stamp = self.get_clock().now().to_msg()
-            for i in range(len(pred_x[0,:])):
-                # print(f'i:{i}')
-                # print(f'len(pred_x):{len(pred_x)}')
-                pose = PoseStamped()
-                pose.pose.position.x = pred_x[0,i]
-                pose.pose.position.y = pred_x[1,i]
-                pose.pose.position.z = pred_x[2,i]
-                pose_angles = euler2quat(pred_x[3,i], pred_x[4,i],pred_x[5,i], 'sxyz')
-                pose.pose.orientation.x = pose_angles[0]
-                pose.pose.orientation.y = pose_angles[1]
-                pose.pose.orientation.z = pose_angles[2]
-                pose.pose.orientation.w = pose_angles[3]
-                msg.poses.append(pose)
-            self.publisher_.publish(msg)
-            # self.get_logger().info('Publishing: "%s"' % msg.poses[0].pose.position)
+            if 0:
+                msg = Path()
+                msg.header.frame_id = "/map"
+                msg.header.stamp = self.get_clock().now().to_msg()
+                for i in range(len(pred_x[0,:])):
+                    # print(f'i:{i}')
+                    # print(f'len(pred_x):{len(pred_x)}')
+                    pose = PoseStamped()
+                    pose.pose.position.x = pred_x[0,i]
+                    pose.pose.position.y = pred_x[1,i]
+                    pose.pose.position.z = pred_x[2,i]
+                    pose_angles = euler2quat(pred_x[3,i], pred_x[4,i],pred_x[5,i], 'sxyz')
+                    pose.pose.orientation.x = pose_angles[0]
+                    pose.pose.orientation.y = pose_angles[1]
+                    pose.pose.orientation.z = pose_angles[2]
+                    pose.pose.orientation.w = pose_angles[3]
+                    msg.poses.append(pose)
+                self.publisher_.publish(msg)
+                # self.get_logger().info('Publishing: "%s"' % msg.poses[0].pose.position)
 
             if self.plot_results:
                 # plot results of current simulation step
@@ -265,6 +289,47 @@ class MPCPublisherSubscriber(Node):
                 else:
                     plt.draw()
             toc = time.perf_counter()
+            # np.append(self.comp_time, np.array([[toc-tic]]), axis=0)
+
+            self.comp_time_list.append([toc-tic])
+            self.time_list.append(tic)
+            # self.time_list[-1] = self.time_list[-1] - self.time_list[0]
+            self.u_list.append(u[:,k])
+            self.x_list.append(x[:,k])
+            self.driekeer = self.driekeer + 1
+            # if (x[2,k] < -12.5):   
+            if (x[1,k] > 6 and x[2,k] >= -2 and 0):
+                print(f'finito!!------------------------------------------------------------------------------------------------')
+                # print(f'comp_time:{self.comp_time}')
+                # print(f'comp_time list: {self.comp_time_list}')
+                comp_time_list_np = np.asarray(self.comp_time_list)
+                time_list_np = np.asarray(self.time_list)
+                time_list_np = time_list_np - time_list_np[0]
+                print(f'comp_time list np: {comp_time_list_np}')
+                x_list_np = np.zeros((len(self.comp_time_list),12))
+                u_list_np = np.zeros((len(self.comp_time_list),8))
+                for i in range(len(self.comp_time_list)):
+                    x_list_np[i,:] = np.asarray(self.x_list[i]) 
+                    u_list_np[i,:] = np.asarray(self.u_list[i])
+                # print(f'x_list: {self.x_list}')
+                # print(f'shape x list:{len(self.x_list)}')
+                # print(f'shape x list:{len(self.x_list[0])}')
+                # print(f'np asarray x_list:{np.asarray(self.x_list[i])} ')
+                print(f'x_list np:{x_list_np}')
+                print(f'u_list np:{u_list_np}')
+                # csvdata = comp_time_list_np + x_list_np + u_list_np
+                # print(f'csvdata: {csvdata}')
+                print(f'shape comptime list: {np.shape(comp_time_list_np)}')
+                print(f'shape x list: {np.shape(x_list_np)}')
+                print(f'shape u list: {np.shape(u_list_np)}')
+                csvdata = np.column_stack((time_list_np,comp_time_list_np,x_list_np, u_list_np))
+                # print(f'csvdata: {csvdata}')
+                with open('experiment_2.csv', 'w', newline='') as csvfile:
+                    writer = csv.writer(csvfile)
+                    writer.writerows(csvdata)
+                checkpoint_reached = 0
+                assert checkpoint_reached == 1, "checkpoint reached"
+                
             print(f'time for one callback:{toc-tic}')
             print('--------------------------------------------------------------------------')
 

@@ -27,14 +27,14 @@
     The original values, [0.0822, -0.00773, 0.3872] however, seem to
     assume NWU (otherwise cob is below cog?).
     -->
-    <xacro:property name="cob" value="0.0 0.0 0.2"/> <!--- "0.0 0.0 0.3" -->
+    <xacro:property name="cob" value="0.0 0.0 0.3"/> <!--- "0.0 0.0 0.3" of eerst ook nog "0.0 0.0 0.2" -->
 
     <!-- Volume, see p.31 in Berg2012 -->
-    <xacro:property name="volume" value="0.02633"/> <!-- 1.83826  of 0.168 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx -->
+    <xacro:property name="volume" value="0.02573"/> <!-- 1.83826  of 0.168 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx -->
 
     <xacro:macro name="raybot_hydro_model" params="namespace">
         <link name="${namespace}/base_link">
-            <neutrally_buoyant>1</neutrally_buoyant> <!-- 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx -->
+            <neutrally_buoyant>0</neutrally_buoyant> <!-- 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx -->
             <volume>${volume}</volume>
             <box>
                 <width>1.21</width> <!-- 1.5 of 0.8 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx -->
@@ -64,22 +64,22 @@
                     0     0    0    0.784 0     0
                     0     0    0    0     0.564 0 
                     0     0    0    0     0     1.367 -->
-                    27.96 0     0     0     0     0 
-                    0     20.35 0     0     0     0
-                    0     0     29.58 0     0     0
-                    0     0     0     3.90  0     0
-                    0     0     0     0     1.48  0 
-                    0     0     0     0     0     4.06 
+                    27.96 0.0 0.0 0.0 0.0 0.0 
+                    0.0 20.35 0.0 0.0 0.0 0.0
+                    0.0 0.0 29.58 0.0 0.0 0.0
+                    0.0 0.0 0.0 3.90  0.0 0.0
+                    0.0 0.0 0.0 0.0 1.48  0.0 
+                    0.0 0.0 0.0 0.0 0.0 4.06 
                 </added_mass>
                 <!-- Linear damping: see p.31 in Berg2012 -->
                 <linear_damping>
                   <!--  -74.82 -69.48 -728.4 -268.8 -309.77 -105 -->
-                  -24.65 -56.70 -47.01 -0.0312 -0.07 -2.956
+                  -24.65 -56.70 -47.01 -0.0312 -0.07 -0.2956
                 </linear_damping>
                 <!-- Non-linear damping: see p.30 in Berg2012 -->
                 <quadratic_damping>
                    <!-- -748.22 -992.53 -1821.01 -672 -774.44 -523.27 -->
-                   -747.06 -181.73 -681.28 -1.9088 -1 -0.133
+                   -747.06 -181.73 -681.28 -1.9088 -1 -1.33
                 </quadratic_damping>
             </hydrodynamic_model>
         </link>

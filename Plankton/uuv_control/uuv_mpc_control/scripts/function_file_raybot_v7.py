@@ -49,6 +49,8 @@ from matplotlib.gridspec import GridSpec
 import casadi
 from mpl_toolkits import mplot3d
 from matplotlib.patches import Rectangle
+from transforms3d.euler import quat2euler
+from transforms3d.euler import euler2quat
 
 
 def continuous_dynamics(x, u):
@@ -66,56 +68,173 @@ def continuous_dynamics(x, u):
     #                         u[1] / m,   # dVy/dt = Fy/m    
     #                         u[2] / m)   # dVz/dt = Fz/m 
     m = 26.33 #26.33 for raybot_prototype_v1, 40.89 for old
+    # m = 1862.87 #for rexrov
     g = 9.81
     W = m*g
     b = W
     x_g = 0
     y_g = 0
-    z_g = 0.3
+    z_g = 0 #-0.2 #0.3
     x_b = 0
     y_b = 0
-    z_b = -0.3
+    z_b = 0.3  # 0.3 #-0.3
     Ixx = 6.28 #6.28 for raybot_prototype_v1, 3.05 for old
     Iyy = 1.96 #1.96 for raybot_prototype_v1, 1.198 for old
     Izz = 5.32 #5.32 for raybot_prototype_v1, 2.36 for old
+    # Ixx = 525.39 # for rexrov
+    # Iyy = 794.20 #for rexrov
+    # Izz = 691.23 # for rexrov
     M = casadi.diag([m,m,m,Ixx,Iyy,Izz])
     AM = casadi.diag([27.96, 20.35, 29.58, 3.90, 1.48, 4.06]) #(27.96, 20.35, 29.58, 3.90, 1.48, 4.06) for raybot_prototype_v1, (53.56, 10.3, 23.6, 0.784, 0.564, 1.367) for old
+    # AM = casadi.diag([779.79, 1222 , 3659.9, 534.9, 842.69, 224.32]) #for rexrov
     Minv = casadi.inv((M+AM))
     v = x[6:12]
     phi = float(x[3])
     theta = float(x[4])
     psi = float(x[5])
+    # quat_w = float(x[6])
     if np.isnan(phi):
         phi = 0
     if np.isnan(theta):
         theta = 0
     if np.isnan(psi):
         psi = 0
-    # R = np.array([[np.cos(psi), -np.sin(psi), 0],[np.sin(psi), np.cos(psi), 0],[0,0,1]])   
-    R = np.array([[ np.cos(psi)*np.cos(theta), -np.sin(psi)*np.cos(phi)+np.cos(psi)*np.sin(theta)*np.sin(phi),  np.sin(psi)*np.sin(phi)+np.cos(psi)*np.cos(theta)*np.sin(phi)],
-                  [ np.sin(psi)*np.cos(theta),  np.cos(psi)*np.cos(phi)+np.sin(psi)*np.sin(theta)*np.sin(phi), -np.cos(psi)*np.sin(phi)+np.sin(psi)*np.sin(theta)*np.cos(phi)],
-                  [-np.sin(theta),              np.cos(theta)*np.sin(phi),                                      np.cos(theta)*np.cos(phi)]])   
+    # if np.isnan(quat_w):
+    #     quat_w = 1
+    # print(f' robot state: {x[0:7]}')
+    # ------------------------------ lets try Euler -------------------
+    # # R = np.array([[np.cos(psi), -np.sin(psi), 0],[np.sin(psi), np.cos(psi), 0],[0,0,1]])   
+    # R = np.array([[ np.cos(psi)*np.cos(theta), -np.sin(psi)*np.cos(phi)+np.cos(psi)*np.sin(theta)*np.sin(phi),  np.sin(psi)*np.sin(phi)+np.cos(psi)*np.cos(phi)*np.sin(theta)],
+    #               [ np.sin(psi)*np.cos(theta),  np.cos(psi)*np.cos(phi)+np.sin(psi)*np.sin(theta)*np.sin(phi), -np.cos(psi)*np.sin(phi)+np.sin(psi)*np.sin(theta)*np.cos(phi)],
+    #               [-np.sin(theta),              np.cos(theta)*np.sin(phi),                                      np.cos(theta)*np.cos(phi)]])   
+    # # R = np.array([[ np.cos(psi), -np.sin(psi), 0],
+    # #               [ np.sin(psi),  np.cos(psi), 0],
+    # #               [           0,            0, 1]])   
     B = np.array([[1,1,1,1,0,0,0,0],[0,0,0,0,1,1,0,0],[0,0,0,0,0,0,1,1],[0,0,0,0,-0.20,0.20,0.51,-0.51],[0.20,0.20,-0.20,-0.20,0,0,0,0],[0.51,-0.51,-0.51,0.51,0,0,0,0]])
-    T = np.array([[1,np.sin(phi)*np.tan(theta), np.cos(phi)*np.tan(theta)],[0,np.cos(phi), -np.sin(phi)],[0,np.sin(phi)/np.cos(theta),np.cos(phi)/np.cos(theta)]])
-    J = np.vstack((np.hstack((R, np.zeros((3,3)))), np.hstack((np.zeros((3,3)),T))))
+    # B = np.array([[0.15974268848446743, 0.15974268848446743, -0.1597424266785477, -0.1597424266785477, 0.7071068613706476, 0.7071068613706476, -0.7071065406341925, -0.7071065406341925],
+    #             [-0.2136101154609486, 0.2136101154609486, -0.21360976537047976, 0.21360976537047976,  0.7071067010024383, -0.7071067010024383, 0.7071070217388206, -0.7071070217388206],
+    #             [0.9637701967007046, 0.9637701967007046, 0.9637703176884092, 0.9637703176884092, 0.0, 0.0, 0.0, 0.0],
+    #             [0.4352320257020549, -0.4352320257020549, 0.43523188102298654, -0.43523188102298654, -0.09121676442931455, 0.09121676442931455, -0.09121680580430785, 0.09121680580430785],
+    #             [0.9430934973994073, 0.9430934973994073, -0.9430934667380183, -0.9430934667380183, 0.09121678511681354, 0.09121678511681354, -0.09121674374181084, -0.09121674374181084],
+    #             [0.13688862492470316, -0.13688862492470316, -0.1368884005748274, 0.1368884005748274, -0.6487987634902757, 0.6487987634902757, 0.6487987335687417, -0.6487987335687417]]) #rexrov
+    # # B = np.array([[1,1,1,1,0,0,0,0],[0,0,0,0,1,1,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,-0.20,0.20,0,0],[0.20,0.20,-0.20,-0.20,0,0,0,0],[0.51,-0.51,-0.51,0.51,0,0,0,0]])
+    # T = np.array([[1,np.sin(phi)*np.tan(theta), np.cos(phi)*np.tan(theta)],[0,np.cos(phi), -np.sin(phi)],[0,np.sin(phi)/np.cos(theta),np.cos(phi)/np.cos(theta)]])
+    # J = np.vstack((np.hstack((R, np.zeros((3,3)))), np.hstack((np.zeros((3,3)),T))))
+
+    # ------------------------------ lets try quaternion -------------------
+    # roll = phi
+    # pitch = theta
+    # yaw = psi
+    # e1 = np.sin(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) - np.cos(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
+    # e2 = np.cos(roll/2) * np.sin(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.cos(pitch/2) * np.sin(yaw/2)
+    # e3 = np.cos(roll/2) * np.cos(pitch/2) * np.sin(yaw/2) - np.sin(roll/2) * np.sin(pitch/2) * np.cos(yaw/2)
+    # eta = np.cos(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
+
+    # e1 = phi
+    # e2 = theta
+    # e3 = psi
+    # eta = quat_w
+    # R = np.array([[ 1-(2*(e2**2+e3**2)), 2*(e1*e2-e3*eta), 2*(e1*e3+e2*eta)],
+    #               [ 2*(e1*e2+e3*eta), 1-(2*(e1**2+e3**2)), 2*(e2*e3-e1*eta)],
+    #               [ 2*(e1*e3-e2*eta), 2*(e2*e3+e1*eta)   , 1-(2*(e1**2+e2**2))]])  
+    # T = np.array([[-e1,-e2, -e3],[eta,-e3, e2],[e3,eta,-e1],[-e2,e1,eta]])
+    # J = np.vstack((np.hstack((R, np.zeros((3,3)))), np.hstack((np.zeros((4,3)),T))))
+
+    # ---------------------------------------- casaddddiiiii --------------------------------------
+    phi_cas = x[3]
+    theta_cas = x[4]
+    psi_cas = x[5]
+    # phi_cas = casadi.SX.zeros(1,1)
+    # theta_cas = casadi.SX.zeros(1,1)
+    R_cas = casadi.SX(3,3)
+    R_cas[0,0] = casadi.cos(psi_cas)*casadi.cos(theta_cas)
+    R_cas[0,1] = -casadi.sin(psi_cas)*casadi.cos(phi_cas)+casadi.cos(psi_cas)*casadi.sin(theta_cas)*casadi.sin(phi_cas)
+    R_cas[0,2] = casadi.sin(psi_cas)*casadi.sin(phi_cas)+casadi.cos(psi_cas)*casadi.cos(phi_cas)*casadi.sin(theta_cas)
+    R_cas[1,0] = casadi.sin(psi_cas)*casadi.cos(theta_cas)
+    R_cas[1,1] = casadi.cos(psi_cas)*casadi.cos(phi_cas)+casadi.sin(psi_cas)*casadi.sin(theta_cas)*casadi.sin(phi_cas)
+    R_cas[1,2] = -casadi.cos(psi_cas)*casadi.sin(phi_cas)+casadi.sin(psi_cas)*casadi.sin(theta_cas)*casadi.cos(phi_cas)
+    R_cas[2,0] = -casadi.sin(theta_cas)
+    R_cas[2,1] =  casadi.cos(theta_cas)*casadi.sin(phi_cas)
+    R_cas[2,2] = casadi.cos(theta_cas)*casadi.cos(phi_cas)
+
+    R_cas_z = casadi.SX(3,3)
+    R_cas_z[0,0] = casadi.cos(psi_cas)
+    R_cas_z[0,1] = -casadi.sin(psi_cas)
+    R_cas_z[0,2] = casadi.SX.zeros(1,1)
+    R_cas_z[1,0] = casadi.sin(psi_cas)
+    R_cas_z[1,1] = casadi.cos(psi_cas)
+    R_cas_z[1,2] = casadi.SX.zeros(1,1)
+    R_cas_z[2,0] = casadi.SX.zeros(1,1)
+    R_cas_z[2,1] = casadi.SX.zeros(1,1)
+    R_cas_z[2,2] = casadi.SX.ones(1,1)
+    # R_cassie = casadi.SX(3,3)
+    # R_cassie = [[ casadi.cos(psi_cas)*casadi.cos(theta_cas), -casadi.sin(psi_cas)*casadi.cos(phi_cas)+casadi.cos(psi_cas)*casadi.sin(theta_cas)*casadi.sin(phi_cas),  casadi.sin(psi_cas)*casadi.sin(phi_cas)+casadi.cos(psi_cas)*casadi.cos(phi_cas)*casadi.sin(theta_cas)],
+    #               [ casadi.sin(psi_cas)*casadi.cos(theta_cas),  casadi.cos(psi_cas)*casadi.cos(phi_cas)+casadi.sin(psi_cas)*casadi.sin(theta_cas)*casadi.sin(phi_cas), -casadi.cos(psi_cas)*casadi.sin(phi_cas)+casadi.sin(psi_cas)*casadi.sin(theta_cas)*casadi.cos(phi_cas)],
+    #               [-casadi.sin(theta_cas),             casadi.cos(theta_cas)*casadi.sin(phi_cas),                                     casadi.cos(theta_cas)*casadi.cos(phi_cas)]]
+    # print(f'R_cas =:{R_cas}')
+    # print(f'R_cassie =:{R_cassie}')
+    # B_cassie = casadi.SX(6,8)
+    # T_cassie = casadi.SX(3,3)
+    T_cas = casadi.SX(3,3)
+    # J_cassie = casadi.SX(6,6)
+    # B_cassie = [[1,1,1,1,0,0,0,0],[0,0,0,0,1,1,0,0],[0,0,0,0,0,0,1,1],[0,0,0,0,-0.20,0.20,0.51,-0.51],[0.20,0.20,-0.20,-0.20,0,0,0,0],[0.51,-0.51,-0.51,0.51,0,0,0,0]]
+    T_cas[0,0] = casadi.SX.ones(1,1)
+    T_cas[0,1] = casadi.sin(phi_cas)*casadi.tan(theta_cas)
+    T_cas[0,2] =casadi.cos(phi_cas)*casadi.tan(theta_cas)
+    T_cas[1,0] =casadi.SX.zeros(1,1)
+    T_cas[1,1] =casadi.cos(phi_cas)
+    T_cas[1,2] =-casadi.sin(phi_cas)
+    T_cas[2,0] =casadi.SX.zeros(1,1)
+    T_cas[2,1] =casadi.sin(phi_cas)/casadi.cos(theta_cas)
+    T_cas[2,1] =casadi.cos(phi_cas)/casadi.cos(theta_cas)
+    # T_cassie = [[casadi.SX.ones(1,1),casadi.sin(phi_cas)*casadi.tan(theta_cas), casadi.cos(phi_cas)*casadi.tan(theta_cas)],[casadi.SX.zeros(1,1),casadi.cos(phi_cas), -casadi.sin(phi_cas)],[casadi.SX.zeros(1,1),casadi.sin(phi_cas)/casadi.cos(theta_cas),casadi.cos(phi_cas)/casadi.cos(theta_cas)]]
+    zeros_cassie = casadi.SX.zeros(3,3)
+    # zeros_cassie = [[0,0,0],[0,0,0],[0,0,0]]
+    # J_cassie_1 = casadi.SX(6,3)
+    # print(f'horzcat:{casadi.horzcat(R_cas,zeros_cassie)}')
+    # J_cassie = [[R_cassie, zeros_cassie],[zeros_cassie, T_cassie]]
+    J_cas = casadi.vertcat(casadi.horzcat(R_cas_z,zeros_cassie), casadi.horzcat(zeros_cassie, T_cas))
+
+
+
+
     # ---- restoring forces -----------------------------------------------------------
-    g_n = np.array([ (W-b)*np.sin(theta), 
-                    -(W-b)*np.cos(theta)*np.sin(phi), 
-                    -(W-b)*np.cos(theta)*np.cos(phi), 
-                    -(y_g*W-y_b*b)*np.cos(theta)*np.cos(phi) + (z_g*W-z_b*b)*np.cos(theta)*np.sin(phi),
-                     (z_g*W-z_b*b)*np.sin(theta)             + (x_g*W-x_b*b)*np.cos(theta)*np.cos(phi),
-                    -(x_g*W-x_b*b)*np.cos(theta)*np.sin(phi) - (y_g*W-y_b*b)*np.sin(theta)])
+    # angles_pose = quat2euler([e1, e2,e3,eta])
+    # angles_pose = np.array([phi, theta,psi])
+    # g_n = np.array([ (W-b)*np.sin(angles_pose[1]), 
+    #                 -(W-b)*np.cos(angles_pose[1])*np.sin(angles_pose[0]), 
+    #                 -(W-b)*np.cos(angles_pose[1])*np.cos(angles_pose[0]), 
+    #                 -(y_g*W-y_b*b)*np.cos(angles_pose[1])*np.cos(angles_pose[0]) + (z_g*W-z_b*b)*np.cos(angles_pose[1])*np.sin(angles_pose[0]),
+    #                  (z_g*W-z_b*b)*np.sin(angles_pose[1])             + (x_g*W-x_b*b)*np.cos(angles_pose[1])*np.cos(angles_pose[0]),
+    #                 -(x_g*W-x_b*b)*np.cos(angles_pose[1])*np.sin(angles_pose[0]) - (y_g*W-y_b*b)*np.sin(angles_pose[1])])
+    # phi_cas = x[3]
+    # theta_cas = x[4]
+    g_n_cas = casadi.SX(6,1)
+    g_n_cas[0,0] = (W-b)*casadi.sin(theta_cas)
+    g_n_cas[1,0] = -(W-b)*casadi.cos(theta_cas)*casadi.sin(phi_cas)
+    g_n_cas[2,0] = -(W-b)*casadi.cos(theta_cas)*casadi.cos(phi_cas)
+    g_n_cas[3,0] = -(y_g*W-y_b*b)*casadi.cos(theta_cas)*casadi.cos(phi_cas) + (z_g*W-z_b*b)*casadi.cos(theta_cas)*casadi.sin(phi_cas)
+    g_n_cas[4,0] = (z_g*W-z_b*b)*casadi.sin(theta_cas)             + (x_g*W-x_b*b)*casadi.cos(theta_cas)*casadi.cos(phi_cas)
+    g_n_cas[5,0] = -(x_g*W-x_b*b)*casadi.cos(theta_cas)*casadi.sin(phi_cas) - (y_g*W-y_b*b)*casadi.sin(theta_cas)
+    # g_n = np.array([0,0,0,0,0,0])
     # ---- /restoring forces -----------------------------------------------------------
     # ---- damping --------------------------------------------------------------------
     # d_l = np.array([4, 6, 5, 0.07, 0.07, 0.07]) #need to check this for raybot_prototype_v1
     # d_nl = np.array([18, 21, 37, 1.5, 1.5, 1.5]) #need to check this for raybot_prototype_v1
-    d_l = np.array([24.65, 56.70, 47.01, 0.0312, 0.07, 2.956]) #according to calculations of model
-    d_nl = np.array([747.06, 181.73, 681.28, 1.9088, 1, 0.133]) #according to calculations of model
+    d_l = np.array([24.65, 56.70, 47.01, 0.0312, 0.07, 0.2956]) #according to calculations of model
+    d_nl = np.array([747.06, 181.73, 681.28, 1.9088, 1, 1.33]) #according to calculations of model
+
+    # d_l = np.array([74.82, 69.48, 728.4, 268.8, 309.77, 105]) #according to calculations of model rexrov
+    # d_nl = np.array([748.22, 992.53, 1821.01, 672, 774.44, 523.27]) #according to calculations of model rexrov
+
     # d = np.array([d_l*v + d_nl*(np.diag(np.abs(v))@v)])
     # d = np.array([d_l*v])
     d = casadi.horzcat(d_l*v + d_nl*(casadi.diag(casadi.fabs(v))@v))
+    # print(f'diagonal damping = :{d}')
+    # print(f'restoring = :{g_n_cas}')
     # ---- /damping -------------------------------------------------------------------
-    dx = casadi.vertcat(J@v, Minv@(B@u-d-g_n))
+    dx = casadi.vertcat(J_cas@v, Minv@((B@u)-d+g_n_cas))
+    # dx = casadi.vertcat(J_cas@v, Minv@((B@u)-d))
     # print(f" dx : {dx}")
     # dx1 = casadi.vertcat(x[3], x[4], x[5], u[0]/m, u[1]/m, u[2]/Izz)
     # print(f" dx1 : {dx1}")
@@ -130,30 +249,33 @@ def continuous_dynamics(x, u):
                             dx[8],       # dVz/dt = Fz/m
                             dx[9],       # dVphi/dt = Fphi/Ixx 
                             dx[10],      # dVtheta/dt = Ftheta/Iyy 
-                            dx[11])      # dVpsi/dt = Fpsi/Izz          
+                            dx[11])      # dVpsi/dt = Fpsi/Izz  
+                                  
 
 def obj(z,current_target):
     """Least square costs on deviating from the path and on the inputs F and phi
     z = [F1, F2, F3, F4, F5, F6, F7, F8,xPos, yPos, zPos, phi, theta, psi, Vx, Vy, Vz, Vphi, Vtheta, Vpsi]
     current_target = point on path that is to be headed for
     """
-    return (10000.0*(z[3+5]-current_target[0])**2 # costs on deviating on the
+    cost_thruster = 0.0003 / 0.05 #*100/2 #.006*1
+    return (10000.0*(z[8]-current_target[0])**2 # costs on deviating on the
 #                                              path in x-direction
-            + 10000.0*(z[4+5]-current_target[1])**2 # costs on deviating on the
+            + 10000.0*(z[9]-current_target[1])**2 # costs on deviating on the
 #                                               path in y-direction
-            + 10000*(z[5+5]-current_target[2])**2 # costs on deviating on the
+            + 10000*(z[10]-current_target[2])**2 # costs on deviating on the
  #                                               path in z-direction
-            + 1000*(z[6+5]-current_target[3])**2 
-            + 1000*(z[7+5]-current_target[4])**2 
-            + 1000*(z[8+5]-current_target[5])**2 
-            + .001*z[0]**2 # penalty on input u1
-            + .001*z[1]**2 # penalty on input u2
-            + .001*z[2]**2 # penalty on input u3
-            + .001*z[3]**2 # penalty on input u4
-            + .001*z[4]**2 # penalty on input u5
-            + .001*z[5]**2 # penalty on input u6
-            + .001*z[6]**2 # penalty on input u7
-            + .001*z[7]**2)# penalty on input u8
+            + 1000*(z[11]-current_target[3])**2 
+            + 1000*(z[12]-current_target[4])**2 
+            + 1000*(z[13]-current_target[5])**2
+            # + 50*(z[9+5]-current_target[5])**2 
+            + cost_thruster*1*z[0]**2 # penalty on input u1
+            + cost_thruster*1*z[1]**2 # penalty on input u2
+            + cost_thruster*1*z[2]**2 # penalty on input u3
+            + cost_thruster*1*z[3]**2 # penalty on input u4
+            + cost_thruster*z[4]**2 # penalty on input u5
+            + cost_thruster*z[5]**2 # penalty on input u6
+            + cost_thruster*z[6]**2 # penalty on input u7
+            + cost_thruster*z[7]**2)# penalty on input u8
 
 def objN(z,current_target):
     """Increased least square costs for last stage on deviating from the path and 
@@ -161,60 +283,82 @@ def objN(z,current_target):
     z = [F1, F2, F3, F4, F5, F6, F7, F8,xPos, yPos, zPos, phi, theta, psi, Vx, Vy, Vz, Vphi, Vtheta, Vpsi]
     current_target = point on path that is to be headed for
     """
-    return (20000.0*(z[3+5]-current_target[0])**2 # costs on deviating on the
+    cost_thruster =  (0.0003 / 0.05)*2#*100/2# .012*1 of 0.5*0.12
+    return (20000.0*(z[8]-current_target[0])**2 # costs on deviating on the
 #                                              path in x-direction
-        + 20000.0*(z[4+5]-current_target[1])**2 # costs on deviating on the
+        + 20000.0*(z[9]-current_target[1])**2 # costs on deviating on the
 #                                               path in y-direction
-        + 20000*(z[5+5]-current_target[2])**2 # costs on deviating on the
+        + 20000*(z[10]-current_target[2])**2 # costs on deviating on the
 #                                               path in z-direction
-        + 2000*(z[6+5]-current_target[3])**2 
-        + 2000*(z[7+5]-current_target[4])**2 
-        + 2000*(z[8+5]-current_target[5])**2 
-        + .002*z[0]**2 # penalty on input u1
-        + .002*z[1]**2 # penalty on input u2
-        + .002*z[2]**2 # penalty on input u3
-        + .002*z[3]**2 # penalty on input u4
-        + .002*z[4]**2 # penalty on input u5
-        + .002*z[5]**2 # penalty on input u6
-        + .002*z[6]**2 # penalty on input u7
-        + .002*z[7]**2)# penalty on input u8
+        + 2000*(z[11]-current_target[3])**2 
+        + 2000*(z[12]-current_target[4])**2 
+        + 2000*(z[13]-current_target[5])**2
+        # + 100*(z[9+5]-current_target[5])**2 
+        + cost_thruster*1*z[0]**2 # penalty on input u1
+        + cost_thruster*1*z[1]**2 # penalty on input u2
+        + cost_thruster*1*z[2]**2 # penalty on input u3
+        + cost_thruster*1*z[3]**2 # penalty on input u4
+        + cost_thruster*z[4]**2 # penalty on input u5
+        + cost_thruster*z[5]**2 # penalty on input u6
+        + cost_thruster*z[6]**2 # penalty on input u7
+        + cost_thruster*z[7]**2)# penalty on input u8
 
 def calc_points_on_ellipse(num_points):
     """Desired trajectory on ellipoid represented by 2D points"""
-    # dT = 2 * np.pi / num_points
-    dT = 1 / num_points
-    # print(f"dT :{dT}")
-    t = np.arange(dT,(num_points+1)*dT,dT)
-    t_vert = np.arange(dT,(2*num_points+1)*dT,dT)
-    dT_circle = np.pi / num_points
-    # t_circle = np.arange(dT,(num_points)*dT,dT/1.96)
-    t_circle = np.arange(dT_circle,(num_points)*dT_circle,dT_circle/1.96)
-    # t2 = np.arange(dT,(num_points+1)*dT,dT*2)
-    # print(f"t :{t}")
-    # print(f"t_vert :{t_vert}")
-    # print(f't_circle:{t_circle}')
-    # print(f't_circle y:{np.sin(np.arange(dT_circle,(num_points)*dT_circle,dT_circle))}')
-    # print(f't_circle z:{-np.cos(np.arange(dT_circle,(num_points)*dT_circle,dT_circle))}')
-    # print(f"t2 :{t2}")
-    # path_points = np.array([0.5*np.cos(t),
-                    # 2.0*np.sin(t), 0.5*np.sin(t)])
-    path_points = np.hstack([np.array([0*t_vert,0*t_vert,-1*t_vert-2, 0*t_vert, 0*t_vert, 0*t_vert]), 
-                                np.array([0*np.cos(t_circle),-1.250/2*np.cos(t_circle)+1.25/2,-1.25/2*np.sin(t_circle)-2-2, 0*np.cos(t_circle), 0*np.cos(t_circle), 0*np.cos(t_circle)]), 
-                                np.array([0*t_vert,0*t_vert+1.25, 1*t_vert-2-2, 0*t_vert, 0*t_vert, 0*t_vert]),
-                                np.array([0*np.cos(t_circle),-1.250/2*np.cos(t_circle)+1.25/2+1.25,1.25/2*np.sin(t_circle)-2, 0*np.cos(t_circle), 0*np.cos(t_circle), 0*np.cos(t_circle)]),
-                                np.array([0*t_vert,0*t_vert+2.5,-1*t_vert-2, 0*t_vert, 0*t_vert, 0*t_vert]),
-                                np.array([0*np.cos(t_circle),-1.250/2*np.cos(t_circle)+1.25/2+2.5,-1.25/2*np.sin(t_circle)-2-2, 0*np.cos(t_circle), 0*np.cos(t_circle), 0*np.cos(t_circle)]),
-                                np.array([0*t_vert,0*t_vert+3.75,1*t_vert-2-2, 0*t_vert, 0*t_vert, 0*t_vert]),
-                                np.array([0*np.cos(t_circle),-1.250/2*np.cos(t_circle)+1.25/2+3.75,1.25/2*np.sin(t_circle)-2, 0*np.cos(t_circle), 0*np.cos(t_circle), 0*np.cos(t_circle)]),
-                                np.array([0*t_vert,0*t_vert+5,-1*t_vert-2, 0*t_vert, 0*t_vert, 0*t_vert]),
-                                np.array([0*np.cos(t_circle),-1.250/2*np.cos(t_circle)+1.25/2+5,-1.25/2*np.sin(t_circle)-2-2, 0*np.cos(t_circle), 0*np.cos(t_circle), 0*np.cos(t_circle)]),
-                                np.array([0*t_vert,0*t_vert+6.25,1*t_vert-2-2, 0*t_vert, 0*t_vert, 0*t_vert]),
-                                np.array([0*t,0*t+6.25,0*t-2, 0*t, 0*t, 0*t])
-                                # np.array([0*t_vert,0*t_vert,-0.5*t_vert-1, 0*t_vert, 0*t_vert, 0*t_vert])
-                                ])
-    # path_points = np.hstack([np.array([0*t,0*t,0*t-2, 0*t, 0*t, 0*t])
-    #                             ])
-    print(f"path_points:{path_points}")
+    if 1:
+        # dT = 2 * np.pi / num_points
+        dT = 1 / num_points
+        # print(f"dT :{dT}")
+        t = np.arange(dT,(num_points+1)*dT,dT)
+        t_vert = np.arange(dT,(2*num_points+1)*dT,dT)
+        dT_circle = np.pi / num_points
+        # t_circle = np.arange(dT,(num_points)*dT,dT/1.96)
+        t_circle = np.arange(dT_circle,(num_points)*dT_circle,dT_circle/1.96)
+        # t2 = np.arange(dT,(num_points+1)*dT,dT*2)
+        # print(f"t :{t}")
+        # print(f"t_vert :{t_vert}")
+        # print(f't_circle:{t_circle}')
+        # print(f't_circle y:{np.sin(np.arange(dT_circle,(num_points)*dT_circle,dT_circle))}')
+        # print(f't_circle z:{-np.cos(np.arange(dT_circle,(num_points)*dT_circle,dT_circle))}')
+        # print(f"t2 :{t2}")
+        # path_points = np.array([0.5*np.cos(t),
+                        # 2.0*np.sin(t), 0.5*np.sin(t)])
+        path_points = np.hstack([np.array([0*t_vert,0*t_vert,-1*t_vert-2, 0*t_vert, 0*t_vert, 0*t_vert]), 
+                                    np.array([0*np.cos(t_circle),-1.250/2*np.cos(t_circle)+1.25/2,-1.25/2*np.sin(t_circle)-2-2, 0*np.cos(t_circle), 0*np.cos(t_circle), 0*np.cos(t_circle)]), 
+                                    np.array([0*t_vert,0*t_vert+1.25, 1*t_vert-2-2, 0*t_vert, 0*t_vert, 0*t_vert]),
+                                    np.array([0*np.cos(t_circle),-1.250/2*np.cos(t_circle)+1.25/2+1.25,1.25/2*np.sin(t_circle)-2, 0*np.cos(t_circle), 0*np.cos(t_circle), 0*np.cos(t_circle)]),
+                                    np.array([0*t_vert,0*t_vert+2.5,-1*t_vert-2, 0*t_vert, 0*t_vert, 0*t_vert]),
+                                    np.array([0*np.cos(t_circle),-1.250/2*np.cos(t_circle)+1.25/2+2.5,-1.25/2*np.sin(t_circle)-2-2, 0*np.cos(t_circle), 0*np.cos(t_circle), 0*np.cos(t_circle)]),
+                                    np.array([0*t_vert,0*t_vert+3.75,1*t_vert-2-2, 0*t_vert, 0*t_vert, 0*t_vert]),
+                                    np.array([0*np.cos(t_circle),-1.250/2*np.cos(t_circle)+1.25/2+3.75,1.25/2*np.sin(t_circle)-2, 0*np.cos(t_circle), 0*np.cos(t_circle), 0*np.cos(t_circle)]),
+                                    np.array([0*t_vert,0*t_vert+5,-1*t_vert-2, 0*t_vert, 0*t_vert, 0*t_vert]),
+                                    np.array([0*np.cos(t_circle),-1.250/2*np.cos(t_circle)+1.25/2+5,-1.25/2*np.sin(t_circle)-2-2, 0*np.cos(t_circle), 0*np.cos(t_circle), 0*np.cos(t_circle)]),
+                                    np.array([0*t_vert,0*t_vert+6.25,1*t_vert-2-2, 0*t_vert, 0*t_vert, 0*t_vert]),
+                                    np.array([0*t,0*t+6.25,0*t-2, 0*t, 0*t, 0*t]),
+                                    np.array([0*t,0*t+6.25,0*t-2, 0*t, 0*t, 0*t])
+                                    # np.array([0*t_vert,0*t_vert,-0.5*t_vert-1, 0*t_vert, 0*t_vert, 0*t_vert])
+                                    ])
+        # path_points = np.hstack([np.array([0*t,0*t,0*t-2, 0*t, 0*t, 0*t])
+        #                             ])
+    if 0:
+        dT = 1 / num_points
+        # print(f"dT :{dT}")
+        t = np.arange(dT,(num_points+1)*dT,dT)
+        t_vert = np.arange(dT,(2*num_points+1)*dT,dT)
+        dT_circle = 2 * np.pi / num_points
+        # t_circle = np.arange(dT,(num_points)*dT,dT/1.96)
+        t_circle = np.arange(dT_circle-dT_circle,(num_points+1)*dT_circle,dT_circle/9.43)
+        # t_circle = np.arange(dT_circle-dT_circle,(num_points+1)*dT_circle,dT_circle/2)
+        print(f'tcircle_: {t_circle}')
+        path_points = np.hstack([np.array([1*(-6*np.cos(t_circle)+6),1*(-6*np.sin(t_circle)),-1*t_circle-2, 0*t_circle, 0*t_circle, 1*t_circle])
+                                #  np.array([0*(-6*np.cos(t_circle)+3),0*(-6*np.sin(t_circle)),-3*(t_circle/(2*np.pi))-5.05, 0*t_circle, 0*t_circle, 0.5*t_circle])
+                                    # np.array([-3*np.cos(t_circle)+3,-3*np.sin(t_circle),-1*t_circle/(2*np.pi)-3, 0*t_circle, 0*t_circle, t_circle]), 
+                                    # np.array([-3*np.cos(t_circle)+3,-3*np.sin(t_circle),-1*t_circle/(2*np.pi)-4, 0*t_circle, 0*t_circle, t_circle]), 
+                                    # np.array([-3*np.cos(t_circle)+3,-3*np.sin(t_circle),-1*t_circle/(2*np.pi)-5, 0*t_circle, 0*t_circle, t_circle])
+                                    # np.array([0*t_vert,0*t_vert+2.5,-1*t_vert, 0*t_vert, 0*t_vert, 0*t_vert])
+                                    # np.array([0*t_vert,0*t_vert,-0.5*t_vert-1, 0*t_vert, 0*t_vert, 0*t_vert])
+                                    ])
+    # print(f"path_points:{path_points}")
     return path_points
 
 def find_closest_point(points, ref_point):
@@ -226,7 +370,7 @@ def find_closest_point(points, ref_point):
     diff = np.transpose(points) - ref_point
     diff = np.transpose(diff)
     squared_diff = np.power(diff,2)
-    squared_dist = squared_diff[0,:] + squared_diff[1,:] + squared_diff[2,:]
+    squared_dist = squared_diff[0,:] + squared_diff[1,:] + squared_diff[2,:] # + squared_diff[5,:]
     return np.argmin(squared_dist)
 
 def extract_next_path_points(path_points, pos, N):
@@ -239,9 +383,10 @@ def extract_next_path_points(path_points, pos, N):
     num_ellipses = np.ceil((idx+N+1)/num_points)
     path_points = np.tile(path_points,(1,int(num_ellipses)))
     # print(f"path_points: {path_points}")
-    # print(f"pos: {pos}")
+    print(f"pos: {pos}")
     # print(f"N: {N}")
     # print(f"idx: {idx}")
+    print(f'path point closest:{path_points[:,idx+1]}')
     # print(f"num_points: {num_points}")
     # print(f"num_ellipses: {num_ellipses}")
     # print(f"path_points: {path_points}")

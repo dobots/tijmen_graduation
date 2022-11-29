@@ -61,7 +61,7 @@ def generate_pathplanner(create_new_solver):
 
     # Problem dimensions
     model = forcespro.nlp.SymbolicModel()
-    model.N = 10 # horizon length
+    model.N = 20 # horizon length
     model.nvar = 20  # number of variables
     model.neq = 12  # number of equality constraints
     model.npar = 6 # number of runtime parameters
@@ -74,9 +74,9 @@ def generate_pathplanner(create_new_solver):
     # available.
 
     # We use an explicit RK4 integrator here to discretize continuous dynamics
-    integrator_stepsize = 0.05 ## decrease the stepsize!
+    integrator_stepsize = 0.5 ## decrease the stepsize!
     model.eq = lambda z: forcespro.nlp.integrate(continuous_dynamics, z[(model.nvar-model.neq):model.nvar], z[0:(model.nvar-model.neq)],
-                                                integrator=forcespro.nlp.integrators.RK4,
+                                                integrator=forcespro.nlp.integrators.IRK4,
                                                 stepsize=integrator_stepsize)
     # Indices on LHS of dynamical constraint - for efficiency reasons, make
     # sure the matrix E has structure [0 I] where I is the identity matrix.
@@ -90,8 +90,12 @@ def generate_pathplanner(create_new_solver):
     # model.ub = np.array([+100.,  +100.,   100.,    20.,   20.,   20.,   40.,  40.,  40.])
     # model.lb = np.array([-100.,  -100.,  -100., -100.,  -100., -100., -100.,  -100.,  -20.,  -20.,  -20., -20.,  -20.,  -20.,  -10., -10., -10., -10., -10., -10.])
     # model.ub = np.array([+100.,  +100.,   100., +100.,  +100.,  100., +100.,   100.,   20.,   20.,   20.,   20.,   20.,   20.,   10.,  10.,  10.,   10.,  10.,  10.])
-    model.lb = np.array([-28.,  -28.,  -28., -28.,  -28., -28., -28.,  -28.,  -np.inf,  -np.inf,  -np.inf,  -np.inf,  -np.inf,  -np.inf,  -0.5, -0.5, -0.5, -0.5, -0.5, -0.5])
-    model.ub = np.array([+36.,  +36.,   36., +36.,  +36.,  36., +36.,   36.,   np.inf,   np.inf,   np.inf,   np.inf,   np.inf,   np.inf,   0.5,  0.5,  0.5,  0.5,  0.5,  0.5])
+    # model.lb = np.array([-np.inf,  -np.inf,  -np.inf, -np.inf,  -np.inf, -np.inf, -np.inf,  -np.inf,  -np.inf,  -np.inf,  -np.inf,  -np.inf,  -np.inf,  -np.inf,  -np.inf, -np.inf, -np.inf, -np.inf, -np.inf, -np.inf])
+    # model.ub = np.array([np.inf,  np.inf,   np.inf, np.inf,  np.inf,  np.inf, np.inf,   np.inf,    np.inf,   np.inf,   np.inf,   np.inf,   np.inf,   np.inf,   np.inf, np.inf,  np.inf,  np.inf, np.inf,  np.inf])
+    model.lb = np.array([-28.,  -28.,  -28., -28.,  -28., -28., -28.,  -28.,  -np.inf,  -np.inf,  -np.inf,  -np.inf,  -np.inf,  -np.inf,  -np.inf, -np.inf, -np.inf, -np.inf, -np.inf, -np.inf])
+    model.ub = np.array([+36.,  +36.,   36., +36.,  +36.,  36., +36.,   36.,    np.inf,   np.inf,   np.inf,   np.inf,   np.inf,   np.inf,   np.inf, np.inf,  np.inf,  np.inf, np.inf,  np.inf])
+    # model.lb = np.array([-2000,  -2000,  -2000, -2000,  -2000, -2000, -2000,  -2000,  -np.inf,  -np.inf,  -np.inf,  -np.inf,  -np.inf,  -np.inf,  -np.inf, -np.inf, -np.inf, -np.inf, -np.inf, -np.inf, -np.inf]) #for rexrov
+    # model.ub = np.array([+2000,  +2000,   2000, +2000,  +2000,  2000, +2000,  2000,   np.inf,   np.inf,   np.inf,   np.inf,   np.inf,   np.inf,   np.inf, np.inf,  np.inf,  np.inf,  np.inf,  np.inf, np.inf]) # for rexrov
     # model.lb = np.array([-1.,  -1.,  -1., -1.,  -1., -1., -1.,  -1.,  -np.inf,  -np.inf,  -np.inf,  -np.inf,  -np.inf,  -np.inf,  -0.5, -0.5, -0.5, -0.5, -0.5, -0.5])
     # model.ub = np.array([+1.,  +1.,   1., +1.,  +1.,  1., +1.,   1.,   np.inf,   np.inf,   np.inf,   np.inf,   np.inf,   np.inf,   0.5,  0.5,  0.5,   0.5,  0.5,  0.5])
     # model.lb = np.array([-28.,  -28.,  -28., -28.,  -28., -28., -28.,  -28.,  -20.,  -20.,  -20., -20.,  -20.,  -20.,  -0.25, -0.25, -0.25, -0.25, -0.25, -0.25])
@@ -106,22 +110,38 @@ def generate_pathplanner(create_new_solver):
 
     # Set solver options
     codeoptions = forcespro.CodeOptions('FORCESNLPsolver')
-    codeoptions.maxit = 200     # Maximum number of iterations
-    codeoptions.printlevel = 0  # Use printlevel = 2 to print progress (but 
+    codeoptions.maxit = 200 #200     # Maximum number of iterations
+    codeoptions.printlevel = 2  # Use printlevel = 2 to print progress (but 
     #                             not for timings)
-    codeoptions.optlevel = 0    # 0 no optimization, 1 optimize for size, 
+    codeoptions.optlevel = 2    # 0 no optimization, 1 optimize for size, 
     #                             2 optimize for speed, 3 optimize for size & speed
     codeoptions.cleanup = False
     codeoptions.timing = 1
     codeoptions.overwrite = 1
-    codeoptions.nlp.hessian_approximation = 'bfgs'
+    codeoptions.nlp.hessian_approximation = 'bfgs' # 'bfgs'
     codeoptions.solvemethod = 'SQP_NLP' # choose the solver method Sequential 
     #                              Quadratic Programming 'SQP_NLP' 
+    # codeoptions.nlp.bfgs_init = 2.5*np.identity(model.neq)
     codeoptions.nlp.bfgs_init = 2.5*np.identity(model.neq)
-    codeoptions.sqp_nlp.maxqps = 1      # maximum number of quadratic problems to be solved
-    # codeoptions.sqp_nlp.reg_hessian = 5e-9 # increase this if exitflag=-8
-    codeoptions.sqp_nlp.reg_hessian = 5e-6 # increase this if exitflag=-8
+    # codeoptions.nlp.bfgs_init = np.diag(np.array([1.23774255e+00, 1.23774255e+00, 1.27340741e+00, 1.27340741e+00,
+    #                                               6.88696480e-01, 6.88696480e-01, 1.84223499e+00, 1.84223499e+00,
+    #                                               1.00000000e+00, 1.00000000e+00, 2.50725148e+03, 1.00000000e+00,
+    #                                               4.51614177e+01, 5.18369858e+01, 6.33790225e+03, 5.57089023e+01,
+    #                                               2.13425158e+04, 1.00000000e+00, 2.47872333e+00, 1.00000000e+00]))
+    codeoptions.exportBFGS = 1
+    # codeoptions.nlp.parametricBFGSinit = 1  # Allows us to initialize the estimate at run time with the exported one
+    # codeoptions.nlp.integrator.nodes = 5
+    codeoptions.sqp_nlp.maxqps = 3   # maximum number of quadratic problems to be solved
+    codeoptions.sqp_nlp.reg_hessian = 5e-3 # increase this if exitflag=-8
+    # codeoptions.sqp_nlp.reg_hessian = 50 # increase this if exitflag=-8
     # codeoptions.sqp_nlp.reg_hessian = 500000 # increase this if exitflag=-8
+    # codeoptions.exportBFGS = 1
+    # codeoptions.sqp_nlp.TolStat = 0.1
+    # codeoptions.sqp_nlp.TolEq = 0.1
+    # codeoptions.forcenonconvex = 1
+    codeoptions.sqp_nlp.qpinit = 0
+    codeoptions.nlp.integrator.reuseNewtonJacobian = 0
+    # codeoptions.nlp.integrator.newtonIter = 20
     # change this to your server or leave uncommented for using the 
     # standard embotech server at https://forces.embotech.com 
     # codeoptions.server = 'https://forces.embotech.com'
@@ -132,5 +152,5 @@ def generate_pathplanner(create_new_solver):
     if create_new_solver:
         solver = model.generate_solver(options=codeoptions)
     else:
-        solver = forcespro.nlp.Solver.from_directory("/home/tijmen/plankton_ws/src/tijmen_graduation/forcespro/path_tracking_robot_solver_v6/FORCESNLPsolver")
+        solver = forcespro.nlp.Solver.from_directory("/home/tijmen/plankton_ws/src/tijmen_graduation/Plankton/uuv_control/uuv_mpc_control/scripts/FORCESNLPsolver")
     return model,solver

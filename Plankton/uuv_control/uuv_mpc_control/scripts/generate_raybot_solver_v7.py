@@ -61,7 +61,7 @@ def generate_pathplanner(create_new_solver):
 
     # Problem dimensions
     model = forcespro.nlp.SymbolicModel()
-    model.N = 20 # horizon length
+    model.N = 15 # horizon length
     model.nvar = 20  # number of variables
     model.neq = 12  # number of equality constraints
     model.npar = 6 # number of runtime parameters
@@ -123,24 +123,24 @@ def generate_pathplanner(create_new_solver):
     #                              Quadratic Programming 'SQP_NLP' 
     # codeoptions.nlp.bfgs_init = 2.5*np.identity(model.neq)
     codeoptions.nlp.bfgs_init = 2.5*np.identity(model.neq)
-    # codeoptions.nlp.bfgs_init = np.diag(np.array([1.23774255e+00, 1.23774255e+00, 1.27340741e+00, 1.27340741e+00,
-    #                                               6.88696480e-01, 6.88696480e-01, 1.84223499e+00, 1.84223499e+00,
-    #                                               1.00000000e+00, 1.00000000e+00, 2.50725148e+03, 1.00000000e+00,
-    #                                               4.51614177e+01, 5.18369858e+01, 6.33790225e+03, 5.57089023e+01,
-    #                                               2.13425158e+04, 1.00000000e+00, 2.47872333e+00, 1.00000000e+00]))
-    codeoptions.exportBFGS = 1
+    # codeoptions.nlp.bfgs_init = np.diag(np.array([8.43312260e-01, 8.43315353e-01, 8.67300924e-01, 8.67303987e-01,
+    #                                               8.30514965e-01, 8.30521606e-01, 8.57537240e-01, 8.57507129e-01,
+    #                                               1.03500000e+00, 1.03500000e+00, 1.74708107e+03, 1.03501074e+00,
+    #                                               1.05540745e+00, 1.04677949e+00, 4.46806284e+02, 1.17484341e+00,
+    #                                               7.36497546e+03, 1.03500234e+00, 1.03551684e+00, 1.03572031e+00]))
+    # codeoptions.exportBFGS = 1
     # codeoptions.nlp.parametricBFGSinit = 1  # Allows us to initialize the estimate at run time with the exported one
-    # codeoptions.nlp.integrator.nodes = 5
-    codeoptions.sqp_nlp.maxqps = 3   # maximum number of quadratic problems to be solved
+    # codeoptions.nlp.integrator.nodes = 10
+    codeoptions.sqp_nlp.maxqps = 4 # maximum number of quadratic problems to be solved
     codeoptions.sqp_nlp.reg_hessian = 5e-3 # increase this if exitflag=-8
     # codeoptions.sqp_nlp.reg_hessian = 50 # increase this if exitflag=-8
     # codeoptions.sqp_nlp.reg_hessian = 500000 # increase this if exitflag=-8
     # codeoptions.exportBFGS = 1
-    # codeoptions.sqp_nlp.TolStat = 0.1
-    # codeoptions.sqp_nlp.TolEq = 0.1
+    # codeoptions.sqp_nlp.TolStat = 1
+    # codeoptions.sqp_nlp.TolEq = 0.000001
     # codeoptions.forcenonconvex = 1
-    codeoptions.sqp_nlp.qpinit = 0
-    codeoptions.nlp.integrator.reuseNewtonJacobian = 0
+    # codeoptions.sqp_nlp.qpinit = 0
+    # codeoptions.nlp.integrator.reuseNewtonJacobian = 0
     # codeoptions.nlp.integrator.newtonIter = 20
     # change this to your server or leave uncommented for using the 
     # standard embotech server at https://forces.embotech.com 

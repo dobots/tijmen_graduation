@@ -34,9 +34,9 @@
           <sor>1.2</sor>
         </solver>  -->
       </ode> 
-      <max_step_size>0.01</max_step_size>
+      <max_step_size>0.02</max_step_size>
       <real_time_factor>1</real_time_factor>
-      <real_time_update_rate>100</real_time_update_rate>
+      <real_time_update_rate>50</real_time_update_rate>
     </physics>
     <scene>
       <ambient>0.01 0.01 0.01 1.0</ambient>

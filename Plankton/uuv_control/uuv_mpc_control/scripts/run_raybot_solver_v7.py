@@ -92,7 +92,7 @@ class MPCPublisherSubscriber(Node):
         self.pose_quat = np.zeros(13)
         self.pose_quat[6] = 1
         self.pose_quat[2] = -2
-        self.pose_twist[2] = -1.9
+        self.pose_twist[2] =  -1.9
         self.pose_twist[1] = 0.1
         # self.pose_twist[5] = 1.57
         self.n_thrusters = 8
@@ -109,12 +109,14 @@ class MPCPublisherSubscriber(Node):
         self.model, self.solver = generate_pathplanner(self.create_new_solver)        
         
         # Create 2D points on ellipse which the robot is supposed to follow
-        self.num_points = 20
+        self.num_points = 15
         self.path_points = calc_points_on_ellipse(self.num_points)
         self.comp_time = np.empty((0,1))
         self.comp_time_list = []
         self.u_list = []
         self.x_list = []
+        self.pred_u_list = np.array([])
+        self.pred_x_list = np.array([])
         self.time_list = []
         self.results = np.array([])
         self.driekeer = 0
@@ -163,7 +165,17 @@ class MPCPublisherSubscriber(Node):
         # Set initial guess to start solver from
         x0i = np.zeros((self.model.nvar,1))
         x0 = np.transpose(np.tile(x0i, (1, self.model.N)))
+        x0_new = x0
+        if self.pred_u_list.any():
+            # print(f'self.pred_u_list: {np.transpose(self.pred_u_list)}')
+            # print(f'self.pred_u_list -1: {np.vstack((np.transpose(self.pred_u_list[:,1:]), np.transpose(self.pred_u_list[:,-1])))}')
+            # print(f'self.pred_u_list: {np.vstack((np.transpose(self.pred_u_list[0,-1]), np.transpose(self.pred_u_list[-1])))}')
+            # print(f'self.pred_x_list: {self.pred_x_list}')
+            x0_new = np.hstack((np.vstack((np.transpose(self.pred_u_list[:,1:]), np.transpose(self.pred_u_list[:,-1]))),np.vstack((np.transpose(self.pred_x_list[:,1:]), np.transpose(self.pred_x_list[:,-1])))))
+            # print(f'x0_new:{x0_new}')
+        x0 = x0_new
         # print(f'x0:{x0}')
+        # print(f'x0i:{x0i}')
         # Set initial condition
         # xinit = np.transpose(np.array([0, 0, 0, 0., 0., 0.,0, 0, 0, 0., 0., 0.]))
         xinit = self.pose_twist
@@ -296,9 +308,11 @@ class MPCPublisherSubscriber(Node):
             # self.time_list[-1] = self.time_list[-1] - self.time_list[0]
             self.u_list.append(u[:,k])
             self.x_list.append(x[:,k])
+            self.pred_u_list = pred_u
+            self.pred_x_list = pred_x
             self.driekeer = self.driekeer + 1
             # if (x[2,k] < -12.5):   
-            if (x[1,k] > 6 and x[2,k] >= -2 and 0):
+            if (x[1,k] > 6 and x[2,k] >= -2 and 1):
                 print(f'finito!!------------------------------------------------------------------------------------------------')
                 # print(f'comp_time:{self.comp_time}')
                 # print(f'comp_time list: {self.comp_time_list}')
@@ -324,7 +338,7 @@ class MPCPublisherSubscriber(Node):
                 print(f'shape u list: {np.shape(u_list_np)}')
                 csvdata = np.column_stack((time_list_np,comp_time_list_np,x_list_np, u_list_np))
                 # print(f'csvdata: {csvdata}')
-                with open('experiment_2.csv', 'w', newline='') as csvfile:
+                with open('experiment_4.csv', 'w', newline='') as csvfile:
                     writer = csv.writer(csvfile)
                     writer.writerows(csvdata)
                 checkpoint_reached = 0

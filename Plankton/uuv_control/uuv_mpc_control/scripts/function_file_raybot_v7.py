@@ -257,9 +257,9 @@ def obj(z,current_target):
     z = [F1, F2, F3, F4, F5, F6, F7, F8,xPos, yPos, zPos, phi, theta, psi, Vx, Vy, Vz, Vphi, Vtheta, Vpsi]
     current_target = point on path that is to be headed for
     """
-    cost_thruster = 0.0003 / 0.05 #*100/2 #.006*1
+    cost_thruster = (0.0003 / 0.05)*100#*100/2 #.006*1
     return (10000.0*(z[8]-current_target[0])**2 # costs on deviating on the
-#                                              path in x-direction
+                                             #path in x-direction
             + 10000.0*(z[9]-current_target[1])**2 # costs on deviating on the
 #                                               path in y-direction
             + 10000*(z[10]-current_target[2])**2 # costs on deviating on the
@@ -283,7 +283,7 @@ def objN(z,current_target):
     z = [F1, F2, F3, F4, F5, F6, F7, F8,xPos, yPos, zPos, phi, theta, psi, Vx, Vy, Vz, Vphi, Vtheta, Vpsi]
     current_target = point on path that is to be headed for
     """
-    cost_thruster =  (0.0003 / 0.05)*2#*100/2# .012*1 of 0.5*0.12
+    cost_thruster =  (0.0003 / 0.05)*2*100#*100/2# .012*1 of 0.5*0.12
     return (20000.0*(z[8]-current_target[0])**2 # costs on deviating on the
 #                                              path in x-direction
         + 20000.0*(z[9]-current_target[1])**2 # costs on deviating on the
@@ -335,6 +335,9 @@ def calc_points_on_ellipse(num_points):
                                     np.array([0*np.cos(t_circle),-1.250/2*np.cos(t_circle)+1.25/2+5,-1.25/2*np.sin(t_circle)-2-2, 0*np.cos(t_circle), 0*np.cos(t_circle), 0*np.cos(t_circle)]),
                                     np.array([0*t_vert,0*t_vert+6.25,1*t_vert-2-2, 0*t_vert, 0*t_vert, 0*t_vert]),
                                     np.array([0*t,0*t+6.25,0*t-2, 0*t, 0*t, 0*t]),
+                                    np.array([0*t,0*t+6.25,0*t-2, 0*t, 0*t, 0*t]),
+                                    np.array([0*t,0*t+6.25,0*t-2, 0*t, 0*t, 0*t]),
+                                    np.array([0*t,0*t+6.25,0*t-2, 0*t, 0*t, 0*t]),
                                     np.array([0*t,0*t+6.25,0*t-2, 0*t, 0*t, 0*t])
                                     # np.array([0*t_vert,0*t_vert,-0.5*t_vert-1, 0*t_vert, 0*t_vert, 0*t_vert])
                                     ])
@@ -350,7 +353,7 @@ def calc_points_on_ellipse(num_points):
         t_circle = np.arange(dT_circle-dT_circle,(num_points+1)*dT_circle,dT_circle/9.43)
         # t_circle = np.arange(dT_circle-dT_circle,(num_points+1)*dT_circle,dT_circle/2)
         print(f'tcircle_: {t_circle}')
-        path_points = np.hstack([np.array([1*(-6*np.cos(t_circle)+6),1*(-6*np.sin(t_circle)),-1*t_circle-2, 0*t_circle, 0*t_circle, 1*t_circle])
+        path_points = np.hstack([np.array([0*(-6*np.cos(t_circle)+6),0*(-6*np.sin(t_circle)),-1*t_circle-2, 0*t_circle, 0*t_circle, 0.2*t_circle])
                                 #  np.array([0*(-6*np.cos(t_circle)+3),0*(-6*np.sin(t_circle)),-3*(t_circle/(2*np.pi))-5.05, 0*t_circle, 0*t_circle, 0.5*t_circle])
                                     # np.array([-3*np.cos(t_circle)+3,-3*np.sin(t_circle),-1*t_circle/(2*np.pi)-3, 0*t_circle, 0*t_circle, t_circle]), 
                                     # np.array([-3*np.cos(t_circle)+3,-3*np.sin(t_circle),-1*t_circle/(2*np.pi)-4, 0*t_circle, 0*t_circle, t_circle]), 
@@ -370,7 +373,7 @@ def find_closest_point(points, ref_point):
     diff = np.transpose(points) - ref_point
     diff = np.transpose(diff)
     squared_diff = np.power(diff,2)
-    squared_dist = squared_diff[0,:] + squared_diff[1,:] + squared_diff[2,:] # + squared_diff[5,:]
+    squared_dist = squared_diff[0,:] + squared_diff[1,:] + squared_diff[2,:]#  + squared_diff[5,:]
     return np.argmin(squared_dist)
 
 def extract_next_path_points(path_points, pos, N):
